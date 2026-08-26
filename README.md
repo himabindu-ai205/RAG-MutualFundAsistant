@@ -111,3 +111,16 @@ python scripts/pull_latest_chroma.py --run-id <GITHUB_RUN_ID>
 ```
 
 Scheduled workflows only run on the **default branch** (`main`). Use **Run workflow** to test from another branch after merging the YAML to `main`.
+
+## Deploy on Railway
+
+Railway’s default Python builder looks for `main.py` / `app.py`. This app lives at `src/serve/api.py`, so the repo includes a **Dockerfile** + [`railway.toml`](railway.toml).
+
+1. Connect the GitHub repo and deploy from `main`.
+2. In the service **Variables**, set at least:
+   - `GROQ_API_KEY` — required for generated answers  
+   - `GROQ_MODEL=openai/gpt-oss-120b` (optional; this is the code default)
+3. Generate a public domain (**Settings → Networking → Generate domain**).
+4. Confirm `GET /health` returns `{"status":"ok"}`.
+
+The image builds the React UI and rebuilds Chroma from `data/chunks.jsonl` at **build** time. Daily ingest commits that update `chunks.jsonl` will trigger a new Railway deploy and a fresh index. Do **not** commit `.env`.

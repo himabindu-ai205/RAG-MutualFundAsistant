@@ -34,8 +34,8 @@ Thumbs.db
 data/chroma/**
 !data/chroma/.gitkeep
 !data/chroma/embed_manifest.json
-# chunks.jsonl is force-added by the daily-ingest workflow when it changes
-data/chunks.jsonl
+# Chunks are committed so Railway can rebuild Chroma at image build time.
+# (Daily ingest still force-adds updates.)
 
 # Downloaded Groww HTML snapshots (regenerate via ingest; force-added by daily workflow)
 docs/corpus/groww/**

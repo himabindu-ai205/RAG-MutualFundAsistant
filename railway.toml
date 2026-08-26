@@ -1,0 +1,11 @@
+# Railway: this app is FastAPI at src/serve/api.py (not root main.py).
+# Railpack cannot auto-detect the start command; use the Dockerfile.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
