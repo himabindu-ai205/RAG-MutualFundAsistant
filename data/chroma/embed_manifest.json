@@ -1,0 +1,12 @@
+{
+  "collection": "mf_faq_chunks",
+  "chroma_dir": "S:\\hima\\Nextleap\\RAG-MutualFundAsistant\\data\\chroma",
+  "model": "sentence-transformers/all-MiniLM-L6-v2",
+  "count": 195,
+  "groww_chunks": 34,
+  "by_publisher": {
+    "GROWW": 34,
+    "SBI": 160,
+    "AMFI": 1
+  }
+}

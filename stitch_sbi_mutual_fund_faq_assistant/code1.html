@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SBI Mutual Fund FAQ Assistant</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Source+Sans+3:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Config injected from Style Guidance -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-fixed": "#0d1c2e",
+                    "surface": "#f7faf8",
+                    "surface-container": "#ebefed",
+                    "surface-tint": "#006a63",
+                    "on-primary-fixed-variant": "#00504a",
+                    "outline-variant": "#bdc9c6",
+                    "primary-fixed": "#9cf2e8",
+                    "tertiary": "#7f4025",
+                    "secondary-fixed": "#d5e3fc",
+                    "surface-container-high": "#e5e9e7",
+                    "outline": "#6e7977",
+                    "inverse-surface": "#2d3130",
+                    "surface-container-lowest": "#ffffff",
+                    "on-tertiary-fixed": "#370e00",
+                    "inverse-primary": "#80d5cb",
+                    "surface-bright": "#f7faf8",
+                    "on-error": "#ffffff",
+                    "tertiary-container": "#9c573a",
+                    "primary-container": "#0f766e",
+                    "primary-fixed-dim": "#80d5cb",
+                    "error": "#ba1a1a",
+                    "tertiary-fixed-dim": "#ffb598",
+                    "inverse-on-surface": "#eef1f0",
+                    "on-tertiary-fixed-variant": "#72361b",
+                    "on-secondary-container": "#57657a",
+                    "primary": "#005c55",
+                    "on-background": "#181c1c",
+                    "tertiary-fixed": "#ffdbce",
+                    "on-surface": "#181c1c",
+                    "surface-variant": "#e0e3e1",
+                    "on-primary-fixed": "#00201d",
+                    "secondary-container": "#d5e3fc",
+                    "on-primary-container": "#a3faef",
+                    "secondary": "#515f74",
+                    "surface-container-low": "#f1f4f3",
+                    "on-primary": "#ffffff",
+                    "on-tertiary-container": "#ffe5db",
+                    "secondary-fixed-dim": "#b9c7df",
+                    "error-container": "#ffdad6",
+                    "on-tertiary": "#ffffff",
+                    "on-secondary": "#ffffff",
+                    "on-surface-variant": "#3e4947",
+                    "background": "#F7F4EE", 
+                    "surface-container-highest": "#e0e3e1",
+                    "on-error-container": "#93000a",
+                    "on-secondary-fixed-variant": "#3a485b",
+                    "surface-dim": "#d7dbd9",
+                    "disclaimer-bg": "#F5E6B8",
+                    "disclaimer-text": "#370e00",
+                    "teal-button": "#0F766E"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "2xl": "1rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "sm": "8px",
+                    "xs": "4px",
+                    "lg": "24px",
+                    "gutter": "20px",
+                    "container-max": "1200px",
+                    "unit": "4px",
+                    "md": "16px",
+                    "xl": "40px"
+            },
+            "fontFamily": {
+                    "headline-lg": ["Plus Jakarta Sans"],
+                    "headline-md-mobile": ["Plus Jakarta Sans"],
+                    "body-sm": ["\"Source Sans 3\""],
+                    "headline-md": ["Plus Jakarta Sans"],
+                    "body-lg": ["\"Source Sans 3\""],
+                    "label-md": ["\"Source Sans 3\""],
+                    "display-lg": ["Plus Jakarta Sans"],
+                    "body-md": ["\"Source Sans 3\""]
+            },
+            "fontSize": {
+                    "headline-lg": ["28px", {"lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "headline-md-mobile": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "headline-md": ["22px", {"lineHeight": "30px", "fontWeight": "600"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.filled {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        /* Custom scrollbar for minimalist feel */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: rgba(110, 121, 119, 0.3);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col font-body-md antialiased overflow-hidden">
+<!-- TopAppBar -->
+<header class="bg-surface shadow-sm docked full-width top-0 z-50">
+<div class="flex flex-col md:flex-row items-start md:items-center justify-between px-gutter py-md w-full max-w-container-max mx-auto gap-sm">
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">SBI Mutual Fund FAQ Assistant</h1>
+<p class="font-body-sm text-body-sm text-secondary mt-1">Facts from Groww scheme pages. SBI KIM/SID used as supporting corpus.</p>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-grow w-full max-w-container-max mx-auto px-gutter py-lg flex flex-col gap-lg overflow-y-auto">
+<!-- Persistent Disclaimer Banner -->
+<div class="bg-disclaimer-bg border-l-4 border-tertiary-container rounded-r-lg px-md py-sm flex items-start gap-sm w-full shrink-0 shadow-sm">
+<span class="material-symbols-outlined text-disclaimer-text shrink-0 mt-0.5 filled">info</span>
+<p class="text-disclaimer-text font-body-sm text-body-sm font-semibold">Facts-only. No investment advice.</p>
+</div>
+<div class="flex flex-col lg:flex-row gap-xl flex-grow h-full min-h-[400px]">
+<!-- Left Column: Context & Input -->
+<div class="flex flex-col gap-lg w-full lg:w-5/12 shrink-0">
+<!-- Welcome & Context -->
+<section class="bg-surface-container-lowest rounded-2xl border border-black/5 p-lg shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
+<h2 class="font-headline-lg text-headline-md-mobile md:text-headline-md text-on-surface mb-sm">Welcome.</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mb-md">Ask factual questions about five SBI schemes: Large Cap, Flexicap, ELSS Tax Saver, Contra, and Small Cap.</p>
+<div class="bg-surface-container-low p-sm rounded-lg flex items-start gap-sm">
+<span class="material-symbols-outlined text-secondary shrink-0 mt-0.5">verified_user</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">I retrieve published facts only. I will not recommend buys, compare funds, or calculate returns.</p>
+</div>
+</section>
+<!-- Example Chips -->
+<section class="flex flex-col gap-sm">
+<h3 class="font-label-md text-label-md text-secondary uppercase tracking-widest">Example Questions</h3>
+<div class="flex flex-wrap gap-sm">
+<button class="bg-teal-button/10 hover:bg-teal-button/20 text-teal-button font-body-sm text-body-sm px-4 py-2 rounded-full transition-colors text-left shadow-sm border border-teal-button/20">
+                            What is the expense ratio of SBI Large Cap Direct Growth?
+                        </button>
+<button class="bg-teal-button/10 hover:bg-teal-button/20 text-teal-button font-body-sm text-body-sm px-4 py-2 rounded-full transition-colors text-left shadow-sm border border-teal-button/20">
+                            What is the ELSS lock-in period for SBI ELSS Tax Saver?
+                        </button>
+<button class="bg-teal-button/10 hover:bg-teal-button/20 text-teal-button font-body-sm text-body-sm px-4 py-2 rounded-full transition-colors text-left shadow-sm border border-teal-button/20">
+                            What is the minimum SIP for SBI Flexicap Direct Growth?
+                        </button>
+</div>
+</section>
+</div>
+<!-- Right Column: Ask & Answer -->
+<div class="flex flex-col gap-lg w-full lg:w-7/12 flex-grow h-full">
+<!-- Answer Panel (Empty State) -->
+<section class="bg-surface-container-lowest rounded-2xl border border-black/5 p-lg shadow-[0_4px_20px_rgba(0,0,0,0.04)] flex-grow flex flex-col justify-center items-center text-center relative overflow-hidden min-h-[250px]">
+<div class="absolute inset-0 bg-gradient-to-br from-surface-container-low to-surface-container-lowest opacity-50 z-0 pointer-events-none"></div>
+<div class="z-10 flex flex-col items-center gap-md p-xl">
+<div class="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center mb-sm">
+<span class="material-symbols-outlined text-outline text-3xl">chat_bubble</span>
+</div>
+<h3 class="font-headline-md-mobile text-headline-md-mobile text-on-surface-variant font-medium">Answers appear here.</h3>
+<p class="font-body-sm text-body-sm text-secondary max-w-sm">Each reply includes one source link and a last-updated date.</p>
+</div>
+</section>
+<!-- Ask Row -->
+<section class="bg-surface-container-lowest rounded-2xl border border-black/5 p-md shadow-[0_4px_20px_rgba(0,0,0,0.04)] shrink-0 flex flex-col gap-sm">
+<div class="relative">
+<textarea class="w-full bg-surface font-body-md text-body-md text-on-surface placeholder-outline-variant border border-outline-variant rounded-xl p-md pr-xl focus:border-teal-button focus:ring-1 focus:ring-teal-button transition-shadow resize-none" placeholder="Type a factual question about an in-scope SBI scheme…" rows="2"></textarea>
+</div>
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-sm mt-xs">
+<p class="font-label-md text-[11px] text-secondary flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]">lock</span>
+                            Only a question is sent. Do not enter personal info.
+                        </p>
+<button class="bg-teal-button hover:bg-teal-button/90 text-white font-label-md text-label-md px-lg py-2.5 rounded-lg shadow-sm transition-all flex items-center gap-sm w-full sm:w-auto justify-center">
+<span>Ask</span>
+<span class="material-symbols-outlined text-sm">send</span>
+</button>
+</div>
+</section>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container border-t border-outline-variant full-width bottom-0 mt-auto shrink-0 z-10">
+<div class="flex flex-col md:flex-row justify-between items-center px-gutter py-lg w-full max-w-container-max mx-auto gap-md">
+<div>
+<p class="font-headline-md text-headline-md font-bold text-primary hidden md:block">SBI Mutual Fund FAQ Assistant</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">© SBI Mutual Fund. Facts-only information source.</p>
+</div>
+<div class="flex gap-lg">
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary hover:underline transition-all" href="#">Privacy Policy</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary hover:underline transition-all" href="#">Terms of Service</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary hover:underline transition-all" href="#">Disclaimer</a>
+</div>
+</div>
+</footer>
+</body></html>

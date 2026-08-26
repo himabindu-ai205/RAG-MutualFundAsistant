@@ -1,0 +1,50 @@
+# Secrets and local env
+.env
+.env.local
+*.pem
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Local vector index and runtime artifacts (rebuild via ingest / daily Actions)
+# Full Chroma DB stays local/artifact-only; embed_manifest is trackable.
+data/chroma/**
+!data/chroma/.gitkeep
+!data/chroma/embed_manifest.json
+# chunks.jsonl is force-added by the daily-ingest workflow when it changes
+data/chunks.jsonl
+
+# Downloaded Groww HTML snapshots (regenerate via ingest; force-added by daily workflow)
+docs/corpus/groww/**
+!docs/corpus/groww/.gitkeep
+
+# Optional local caches
+.cache/
+*.log
+
+# React UI (Vite)
+ui/node_modules/
+ui/dist/
