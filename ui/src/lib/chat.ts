@@ -19,7 +19,14 @@ export class ChatRequestError extends Error {
 
 /** API origin without trailing slash. Empty → relative `/chat` (local Vite proxy or FastAPI static). */
 export function apiBaseUrl(): string {
-  const raw = (import.meta.env.VITE_API_BASE_URL || "").trim();
+  let raw = (import.meta.env.VITE_API_BASE_URL || "").trim();
+  if (!raw) {
+    return "";
+  }
+  // Vercel env mistakes: host without scheme becomes a relative path and breaks fetch.
+  if (!/^https?:\/\//i.test(raw)) {
+    raw = `https://${raw}`;
+  }
   return raw.replace(/\/+$/, "");
 }
 
