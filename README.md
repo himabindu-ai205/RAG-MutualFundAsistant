@@ -124,3 +124,32 @@ Railway’s default Python builder looks for `main.py` / `app.py`. This app live
 4. Confirm `GET /health` returns `{"status":"ok"}`.
 
 The image builds the React UI and rebuilds Chroma from `data/chunks.jsonl` at **build** time. Daily ingest commits that update `chunks.jsonl` will trigger a new Railway deploy and a fresh index. Do **not** commit `.env`.
+
+When the UI is on **Vercel**, also set on the API service:
+
+- `CORS_ORIGINS=https://your-app.vercel.app` (optional if you only use `*.vercel.app`; that regex is enabled by default)
+
+## Deploy frontend on Vercel
+
+The React app in `ui/` is a static Vite site. On Vercel it calls the hosted FastAPI backend via `VITE_API_BASE_URL`.
+
+1. Push this repo to GitHub (already done for `main`).
+2. [Vercel](https://vercel.com) → **Add New Project** → import `RAG-MutualFundAsistant`.
+3. Configure the project:
+   - **Root Directory:** `ui`
+   - **Framework Preset:** Vite (or use `ui/vercel.json`)
+   - **Build Command:** `npm run build`
+   - **Output Directory:** `dist`
+4. **Environment Variables** (Production + Preview):
+   - `VITE_API_BASE_URL` = your API origin with **no** trailing slash  
+     Example: `https://your-service.up.railway.app`
+5. Deploy. Open the Vercel URL and ask a sample question.
+
+Local still works without the env var: Vite proxies `/chat` to `http://127.0.0.1:8000`.
+
+```bash
+cd ui
+cp .env.example .env.local   # optional
+npm install
+npm run build
+```

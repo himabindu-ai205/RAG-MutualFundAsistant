@@ -17,6 +17,17 @@ export class ChatRequestError extends Error {
   }
 }
 
+/** API origin without trailing slash. Empty → relative `/chat` (local Vite proxy or FastAPI static). */
+export function apiBaseUrl(): string {
+  const raw = (import.meta.env.VITE_API_BASE_URL || "").trim();
+  return raw.replace(/\/+$/, "");
+}
+
+export function chatEndpoint(): string {
+  const base = apiBaseUrl();
+  return base ? `${base}/chat` : "/chat";
+}
+
 export function isPublicHttpUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
@@ -34,7 +45,7 @@ export function isPublicHttpUrl(url: string): boolean {
 }
 
 export async function askQuestion(question: string): Promise<ChatResponse> {
-  const response = await fetch("/chat", {
+  const response = await fetch(chatEndpoint(), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ question }),

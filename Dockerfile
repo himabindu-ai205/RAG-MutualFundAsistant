@@ -39,4 +39,6 @@ RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTr
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "uvicorn src.serve.api:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Use run_api.py so PORT is validated (invalid values fall back to 8000).
+ENV HOST=0.0.0.0
+CMD ["python", "scripts/run_api.py"]

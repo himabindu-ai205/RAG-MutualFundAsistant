@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from src.ingest.registry import ROOT
+from src.serve.config import cors_origin_regex, cors_origins
 from src.serve.pipeline import answer_question
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
@@ -24,14 +25,20 @@ app = FastAPI(
     version="0.4.0",
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://127.0.0.1:5173",
-        "http://localhost:5173",
-    ],
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Content-Type"],
+_cors_kwargs: dict[str, Any] = {
+    "allow_origins": cors_origins(),
+    "allow_methods": ["GET", "POST", "OPTIONS"],
+    "allow_headers": ["Content-Type"],
+}
+_regex = cors_origin_regex()
+if _regex:
+    _cors_kwargs["allow_origin_regex"] = _regex
+
+app.add_middleware(CORSMiddleware, **_cors_kwargs)
+logger.info(
+    "CORS origins=%s regex=%s",
+    _cors_kwargs["allow_origins"],
+    _regex or "(none)",
 )
 
 

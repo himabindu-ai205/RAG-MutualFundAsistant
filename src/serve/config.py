@@ -122,6 +122,31 @@ def groq_context_chunks() -> int:
         return 3
 
 
+def cors_origins() -> list[str]:
+    """Browser origins allowed to call POST /chat (Vite local + CORS_ORIGINS)."""
+    defaults = [
+        "http://127.0.0.1:5173",
+        "http://localhost:5173",
+    ]
+    raw = (os.getenv("CORS_ORIGINS") or "").strip()
+    extra = [o.strip().rstrip("/") for o in raw.split(",") if o.strip()]
+    seen: set[str] = set()
+    out: list[str] = []
+    for origin in defaults + extra:
+        if origin not in seen:
+            seen.add(origin)
+            out.append(origin)
+    return out
+
+
+def cors_origin_regex() -> str | None:
+    """Allow Vercel preview/production URLs unless CORS_ORIGIN_REGEX is set empty."""
+    if "CORS_ORIGIN_REGEX" in os.environ:
+        raw = os.environ["CORS_ORIGIN_REGEX"].strip()
+        return raw or None
+    return r"https://.*\.vercel\.app"
+
+
 def chroma_dir() -> Path:
     raw = (os.getenv("CHROMA_DIR") or "").strip()
     return Path(raw) if raw else ROOT / "data" / "chroma"
