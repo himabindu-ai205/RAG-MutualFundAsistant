@@ -133,19 +133,22 @@ When the UI is on **Vercel**, also set on the API service:
 
 The React app in `ui/` is a static Vite site. On Vercel it calls the hosted FastAPI backend via `VITE_API_BASE_URL`.
 
-**Important:** Do **not** deploy the repo root as Python/FastAPI. Vercel will see `requirements.txt` and fail with “No FastAPI entrypoint found”. Use the Vite app only.
+**Important:** Deploy only the Vite app. Set **Root Directory = `ui`**. Do not leave the root as the project root (Vercel will treat it as FastAPI). Do not use `npm install --prefix ui` when Root Directory is already `ui` (that creates `ui/ui/package.json`).
 
 1. Push this repo to GitHub (already done for `main`).
 2. [Vercel](https://vercel.com) → **Add New Project** → import `RAG-MutualFundAsistant`.
-3. Configure the project (either works):
-   - **Option A (dashboard):** set **Root Directory** to `ui`, Framework = Vite, Build = `npm run build`, Output = `dist`
-   - **Option B (repo root `vercel.json`):** leave Root Directory empty; install/build/output already point at `ui/`
+3. Project settings:
+   - **Root Directory:** `ui` (required)
+   - **Framework Preset:** Vite
+   - **Install Command:** `npm install` (default)
+   - **Build Command:** `npm run build`
+   - **Output Directory:** `dist`
 4. **Environment Variables** (Production + Preview):
    - `VITE_API_BASE_URL` = your API origin with **no** trailing slash  
      Example: `https://your-service.up.railway.app`
 5. Deploy. Open the Vercel URL and ask a sample question.
 
-If you already created a project and hit the FastAPI error: **Settings → General → Root Directory → `ui` → Save**, then **Redeploy**.
+If you already created a project and saw `ui/ui/package.json`: Root Directory is `ui` but install still uses `--prefix ui`. Clear custom Install/Build commands (use defaults above) and **Redeploy**.
 
 Local still works without the env var: Vite proxies `/chat` to `http://127.0.0.1:8000`.
 
