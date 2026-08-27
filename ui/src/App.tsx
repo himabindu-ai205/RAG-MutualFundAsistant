@@ -51,10 +51,15 @@ export default function App() {
             </h1>
           </div>
         </div>
+        {/* Always visible without scrolling — required disclaimer */}
+        <div className="border-t border-outline-variant/40">
+          <div className="w-full max-w-container-max mx-auto px-gutter py-sm">
+            <DisclaimerBanner />
+          </div>
+        </div>
       </header>
 
       <main className="flex-grow w-full max-w-container-max mx-auto px-gutter py-lg flex flex-col gap-lg">
-        <DisclaimerBanner />
         <div className="flex flex-col lg:flex-row gap-xl flex-grow min-h-[400px]">
           <div className="flex flex-col gap-lg w-full lg:w-5/12 shrink-0">
             <WelcomeCard />

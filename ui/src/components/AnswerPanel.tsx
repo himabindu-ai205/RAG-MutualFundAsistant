@@ -33,6 +33,18 @@ function SourceLink({ url }: { url: string }) {
   );
 }
 
+function DisclaimerChip({ text = DISCLAIMER }: { text?: string }) {
+  return (
+    <div
+      className="bg-[#FFF8E1] text-[#F57F17] px-sm py-xs rounded-full inline-flex items-center gap-xs text-[11px] font-semibold tracking-wider uppercase border border-[#FFE082]"
+      aria-label={DISCLAIMER}
+    >
+      <Icon name="gavel" className="text-[14px]" />
+      {text.trim() || DISCLAIMER}
+    </div>
+  );
+}
+
 export function AnswerPanel({ state }: AnswerPanelProps) {
   if (state.kind === "empty") {
     return (
@@ -48,6 +60,7 @@ export function AnswerPanel({ state }: AnswerPanelProps) {
           <p className="font-body-sm text-body-sm text-secondary max-w-sm m-0">
             Each reply includes one source link and a last-updated date.
           </p>
+          <DisclaimerChip />
         </div>
       </section>
     );
@@ -69,6 +82,9 @@ export function AnswerPanel({ state }: AnswerPanelProps) {
               <div className="h-3 rounded bg-surface-container-high w-5/6 animate-pulse" />
               <div className="h-3 rounded bg-surface-container-high w-2/3 animate-pulse" />
             </div>
+            <div className="mt-md">
+              <DisclaimerChip />
+            </div>
           </div>
         </div>
       </section>
@@ -78,10 +94,11 @@ export function AnswerPanel({ state }: AnswerPanelProps) {
   if (state.kind === "error") {
     return (
       <section
-        className="bg-surface-container-lowest rounded-2xl border border-black/5 p-lg shadow-[0_4px_20px_rgba(0,0,0,0.04)] flex-grow min-h-[180px]"
+        className="bg-surface-container-lowest rounded-2xl border border-black/5 p-lg shadow-[0_4px_20px_rgba(0,0,0,0.04)] flex-grow min-h-[180px] flex flex-col gap-md"
         role="alert"
       >
         <p className="font-body-md text-body-md text-error m-0">{state.message}</p>
+        <DisclaimerChip />
       </section>
     );
   }
@@ -135,10 +152,7 @@ export function AnswerPanel({ state }: AnswerPanelProps) {
             Last updated from sources: {payload.last_updated_from_sources}
           </span>
         </div>
-        <div className="bg-[#FFF8E1] text-[#F57F17] px-sm py-xs rounded-full inline-flex items-center gap-xs text-[11px] font-semibold tracking-wider uppercase border border-[#FFE082]">
-          <Icon name="gavel" className="text-[14px]" />
-          {disclaimer}
-        </div>
+        <DisclaimerChip text={disclaimer} />
       </div>
     </section>
   );
