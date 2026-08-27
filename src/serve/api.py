@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI, Request
@@ -11,7 +12,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from src.ingest.registry import ROOT
-from src.serve.config import cors_origin_regex, cors_origins
+from src.serve.config import chroma_dir, cors_origin_regex, cors_origins
 from src.serve.pipeline import answer_question
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
@@ -19,10 +20,20 @@ logger = logging.getLogger(__name__)
 
 UI_DIST = ROOT / "ui" / "dist"
 
+
+@asynccontextmanager
+async def _lifespan(_app: FastAPI):
+    from src.ingest.embed import EmbedConfig, warmup_query_engine
+
+    warmup_query_engine(EmbedConfig(chroma_dir=chroma_dir()))
+    yield
+
+
 app = FastAPI(
     title="Mutual Fund FAQ Assistant",
     description="Facts-only RAG FAQ for SBI schemes (Groww-primary citations).",
     version="0.4.0",
+    lifespan=_lifespan,
 )
 
 _cors_kwargs: dict[str, Any] = {

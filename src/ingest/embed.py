@@ -26,6 +26,10 @@ DEFAULT_CHROMA_DIR = ROOT / "data" / "chroma"
 DEFAULT_CHUNKS_JSONL = ROOT / "data" / "chunks.jsonl"
 COLLECTION_NAME = "mf_faq_chunks"
 
+# Reuse embedder + Chroma client across online queries (avoid ~10s cold load per request).
+_EMBEDDER_CACHE: dict[str, object] = {}
+_CHROMA_QUERY_CACHE: dict[str, object] = {}
+
 KEYWORD_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("nav", re.compile(r"\bNAV\b|net\s+asset\s+value", re.I)),
     ("exit_load", re.compile(r"\bexit\s*load\b", re.I)),
@@ -100,8 +104,25 @@ def load_chunks_jsonl(path: Path = DEFAULT_CHUNKS_JSONL) -> list[Chunk]:
 def _get_embedder(model_name: str):
     from sentence_transformers import SentenceTransformer
 
-    logger.info("Loading embedding model %s", model_name)
-    return SentenceTransformer(model_name)
+    if model_name not in _EMBEDDER_CACHE:
+        logger.info("Loading embedding model %s", model_name)
+        _EMBEDDER_CACHE[model_name] = SentenceTransformer(model_name)
+    return _EMBEDDER_CACHE[model_name]
+
+
+def _get_query_client(chroma_dir: Path):
+    """Reuse Chroma client + collection across requests (same path)."""
+    key = str(chroma_dir.resolve())
+    if key not in _CHROMA_QUERY_CACHE:
+        import chromadb
+        from chromadb.config import Settings
+
+        client = chromadb.PersistentClient(
+            path=key,
+            settings=Settings(anonymized_telemetry=False),
+        )
+        _CHROMA_QUERY_CACHE[key] = client
+    return _CHROMA_QUERY_CACHE[key]
 
 
 def _get_collection(
@@ -221,13 +242,7 @@ def query_chunks(
 ) -> list[dict[str, Any]]:
     """Query Chroma and lightly re-rank by priority + keyword overlap (hybrid)."""
     cfg = config or EmbedConfig()
-    import chromadb
-    from chromadb.config import Settings
-
-    client = chromadb.PersistentClient(
-        path=str(cfg.chroma_dir),
-        settings=Settings(anonymized_telemetry=False),
-    )
+    client = _get_query_client(cfg.chroma_dir)
     collection = client.get_collection(cfg.collection_name)
     model = _get_embedder(cfg.model_name)
     q_vec = model.encode([query], convert_to_numpy=True, normalize_embeddings=True)[0]
@@ -274,6 +289,17 @@ def query_chunks(
     # Architecture: re-rank by priority then similarity (Groww priority=1 first)
     scored.sort(key=lambda x: (x[1], -x[0]))
     return [item for _, _, item in scored[:n_results]]
+
+
+def warmup_query_engine(config: EmbedConfig | None = None) -> None:
+    """Preload embedder + Chroma on API startup to avoid first-request cold start."""
+    cfg = config or EmbedConfig()
+    try:
+        _get_embedder(cfg.model_name)
+        query_chunks("ELSS lock-in", n_results=1, config=cfg)
+        logger.info("Query engine warmed up (model=%s chroma=%s)", cfg.model_name, cfg.chroma_dir)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Query engine warmup skipped: %s", exc)
 
 
 def build_index_from_chunks_file(

@@ -14,6 +14,7 @@ from src.serve.config import (
     groww_url_by_scheme,
     load_disclaimer,
 )
+from src.serve.text_clean import strip_inline_citations
 
 _SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
 _PII_ECHO = [
@@ -75,6 +76,7 @@ def validate_response(
     # Strip any Source / Last updated the model may have embedded
     answer = re.sub(r"\s*Source:\s*\S+", "", answer, flags=re.I).strip()
     answer = re.sub(r"\s*Last updated from sources:\s*\S+", "", answer, flags=re.I).strip()
+    answer = strip_inline_citations(answer)
     answer = _truncate_sentences(answer)
 
     if not answer:

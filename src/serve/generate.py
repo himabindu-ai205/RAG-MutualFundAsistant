@@ -15,13 +15,14 @@ from src.serve.config import (
     groq_reasoning_effort,
 )
 from src.serve.retrieve import choose_citation_url
+from src.serve.text_clean import strip_inline_citations
 
 logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """Facts-only SBI mutual fund FAQ (Groww-primary).
 Use CONTEXT only. Prefer GROWW/priority=1. Quote published Latest NAV if present.
 No advice, comparisons, return math, or invented numbers. ≤3 short sentences.
-No Source:/Last updated lines. No file paths."""
+No Source:/Last updated lines. No file paths. No inline citations or footnotes (no 【】, [1], †L9)."""
 
 
 def _prefer_compact_chunks(chunks: list[dict[str, Any]], limit: int) -> list[dict[str, Any]]:
@@ -127,6 +128,7 @@ def generate_answer(
         answer = _extractive_fallback(question, chunks)
 
     answer = _strip_meta_lines(answer)
+    answer = strip_inline_citations(answer)
     return {
         "answer": answer,
         "source": url,
