@@ -1,9 +1,9 @@
 source_id,url,publisher,doc_type,scheme,scheme_tag,local_path,retrieved_on,priority
-groww-large-cap,https://groww.in/mutual-funds/sbi-large-cap-direct-plan-growth,GROWW,groww_scheme,SBI Large Cap Fund,sbi_large_cap,docs/corpus/groww/sbi-large-cap-direct-plan-growth.html,2026-08-28,1
-groww-flexicap,https://groww.in/mutual-funds/sbi-flexicap-fund-direct-growth,GROWW,groww_scheme,SBI Flexicap Fund,sbi_flexicap,docs/corpus/groww/sbi-flexicap-fund-direct-growth.html,2026-08-28,1
-groww-elss,https://groww.in/mutual-funds/sbi-elss-tax-saver-fund-direct-growth,GROWW,groww_scheme,SBI ELSS Tax Saver Fund,sbi_elss,docs/corpus/groww/sbi-elss-tax-saver-fund-direct-growth.html,2026-08-28,1
-groww-contra,https://groww.in/mutual-funds/sbi-contra-fund-direct-growth,GROWW,groww_scheme,SBI Contra Fund,sbi_contra,docs/corpus/groww/sbi-contra-fund-direct-growth.html,2026-08-28,1
-groww-small-cap,https://groww.in/mutual-funds/sbi-small-midcap-fund-direct-growth,GROWW,groww_scheme,SBI Small Cap Fund,sbi_small_cap,docs/corpus/groww/sbi-small-midcap-fund-direct-growth.html,2026-08-28,1
+groww-large-cap,https://groww.in/mutual-funds/sbi-large-cap-direct-plan-growth,GROWW,groww_scheme,SBI Large Cap Fund,sbi_large_cap,docs/corpus/groww/sbi-large-cap-direct-plan-growth.html,2026-08-29,1
+groww-flexicap,https://groww.in/mutual-funds/sbi-flexicap-fund-direct-growth,GROWW,groww_scheme,SBI Flexicap Fund,sbi_flexicap,docs/corpus/groww/sbi-flexicap-fund-direct-growth.html,2026-08-29,1
+groww-elss,https://groww.in/mutual-funds/sbi-elss-tax-saver-fund-direct-growth,GROWW,groww_scheme,SBI ELSS Tax Saver Fund,sbi_elss,docs/corpus/groww/sbi-elss-tax-saver-fund-direct-growth.html,2026-08-29,1
+groww-contra,https://groww.in/mutual-funds/sbi-contra-fund-direct-growth,GROWW,groww_scheme,SBI Contra Fund,sbi_contra,docs/corpus/groww/sbi-contra-fund-direct-growth.html,2026-08-29,1
+groww-small-cap,https://groww.in/mutual-funds/sbi-small-midcap-fund-direct-growth,GROWW,groww_scheme,SBI Small Cap Fund,sbi_small_cap,docs/corpus/groww/sbi-small-midcap-fund-direct-growth.html,2026-08-29,1
 kim-large-cap,https://www.sbimf.com/docs/default-source/sif-forms/kim---sbi-large-cap-fund-(formerly-known-as-bluechip-fund).pdf,SBI,KIM,SBI Large Cap Fund,sbi_large_cap,docs/corpus/kim/kim---sbi-large-cap-fund-(formerly-known-as-bluechip-fund).pdf,2026-08-24,2
 sid-large-cap,https://www.sbimf.com/docs/default-source/sif-forms/sid---sbi-large-cap-fund-(formerly-known-as-bluechip-fund).pdf,SBI,SID,SBI Large Cap Fund,sbi_large_cap,docs/corpus/sid/sid---sbi-large-cap-fund-(formerly-known-as-bluechip-fund).pdf,2026-08-24,2
 kim-flexicap,https://www.sbimf.com/docs/default-source/sif-forms/kim---sbi-flexicap-fund.pdf,SBI,KIM,SBI Flexicap Fund,sbi_flexicap,docs/corpus/kim/kim---sbi-flexicap-fund.pdf,2026-08-24,2
@@ -14,10 +14,10 @@ kim-contra,https://www.sbimf.com/docs/default-source/sif-forms/kim---sbi-contra-
 sid-contra,https://www.sbimf.com/docs/default-source/sif-forms/sid---sbi-contra-fund.pdf,SBI,SID,SBI Contra Fund,sbi_contra,docs/corpus/sid/sid---sbi-contra-fund.pdf,2026-08-24,2
 kim-small-cap,https://www.sbimf.com/docs/default-source/sif-forms/kim---sbi-small-cap-fund.pdf,SBI,KIM,SBI Small Cap Fund,sbi_small_cap,docs/corpus/kim/kim---sbi-small-cap-fund.pdf,2026-08-24,2
 sid-small-cap,https://www.sbimf.com/docs/default-source/sif-forms/sid---sbi-small-cap-fund.pdf,SBI,SID,SBI Small Cap Fund,sbi_small_cap,docs/corpus/sid/sid---sbi-small-cap-fund.pdf,2026-08-24,2
-sbi-home,https://www.sbimf.com/,SBI,FAQ,shared,shared,docs/corpus/shared/sbi-home.html,2026-08-28,3
-sbi-sid-kim-hub,https://www.sbimf.com/offer-document-sid-kim,SBI,FAQ,shared,shared,docs/corpus/shared/sbi-sid-kim-hub.html,2026-08-28,3
-sbi-factsheets-hub,https://www.sbimf.com/factsheets/,SBI,factsheet,shared,shared,docs/corpus/shared/sbi-factsheets-hub.html,2026-08-28,3
-sbi-ter,https://www.sbimf.com/total-expense-ratio/,SBI,TER,shared,shared,docs/corpus/shared/sbi-ter.html,2026-08-28,3
-amfi-investor,https://www.amfiindia.com/investor,AMFI,education,shared,shared,docs/corpus/shared/amfi-investor.html,2026-08-28,3
-sbi-smart-statement,https://www.sbimf.com/smart-statement,SBI,statement_guide,shared,shared,docs/corpus/shared/sbi-smart-statement.html,2026-08-28,3
-sebi-riskometer,https://investor.sebi.gov.in/riskometer.html,SEBI,education,shared,shared,docs/corpus/shared/sebi-riskometer.html,2026-08-28,3
+sbi-home,https://www.sbimf.com/,SBI,FAQ,shared,shared,docs/corpus/shared/sbi-home.html,2026-08-29,3
+sbi-sid-kim-hub,https://www.sbimf.com/offer-document-sid-kim,SBI,FAQ,shared,shared,docs/corpus/shared/sbi-sid-kim-hub.html,2026-08-29,3
+sbi-factsheets-hub,https://www.sbimf.com/factsheets/,SBI,factsheet,shared,shared,docs/corpus/shared/sbi-factsheets-hub.html,2026-08-29,3
+sbi-ter,https://www.sbimf.com/total-expense-ratio/,SBI,TER,shared,shared,docs/corpus/shared/sbi-ter.html,2026-08-29,3
+amfi-investor,https://www.amfiindia.com/investor,AMFI,education,shared,shared,docs/corpus/shared/amfi-investor.html,2026-08-29,3
+sbi-smart-statement,https://www.sbimf.com/smart-statement,SBI,statement_guide,shared,shared,docs/corpus/shared/sbi-smart-statement.html,2026-08-29,3
+sebi-riskometer,https://investor.sebi.gov.in/riskometer.html,SEBI,education,shared,shared,docs/corpus/shared/sebi-riskometer.html,2026-08-29,3
