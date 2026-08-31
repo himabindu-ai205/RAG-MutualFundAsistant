@@ -15,6 +15,7 @@ from src.serve.config import (
     load_disclaimer,
 )
 from src.serve.text_clean import strip_inline_citations
+from src.serve.question_focus import question_focus, trim_unasked_facts
 
 _SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
 _PII_ECHO = [
@@ -64,6 +65,7 @@ def validate_response(
     intent: str,
     scheme_tag: str | None = None,
     prefer_groww: bool = True,
+    question: str | None = None,
 ) -> tuple[dict[str, Any], list[str]]:
     """Enforce response contract. Returns (cleaned_payload, issues)."""
     issues: list[str] = []
@@ -77,6 +79,8 @@ def validate_response(
     answer = re.sub(r"\s*Source:\s*\S+", "", answer, flags=re.I).strip()
     answer = re.sub(r"\s*Last updated from sources:\s*\S+", "", answer, flags=re.I).strip()
     answer = strip_inline_citations(answer)
+    if question:
+        answer = trim_unasked_facts(answer, question_focus(question))
     answer = _truncate_sentences(answer)
 
     if not answer:

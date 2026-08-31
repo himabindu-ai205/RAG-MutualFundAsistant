@@ -15,12 +15,14 @@ from src.serve.config import (
     groq_reasoning_effort,
 )
 from src.serve.retrieve import choose_citation_url
+from src.serve.question_focus import focus_instruction, question_focus, trim_unasked_facts
 from src.serve.text_clean import strip_inline_citations
 
 logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """Facts-only SBI mutual fund FAQ (Groww-primary).
-Use CONTEXT only. Prefer GROWW/priority=1. Quote published Latest NAV if present.
+Use CONTEXT only. Prefer GROWW/priority=1.
+Answer ONLY the specific fact(s) asked — do not add NAV, SIP, expense ratio, exit load, or other fields unless the question asks for them.
 No advice, comparisons, return math, or invented numbers. ≤3 short sentences.
 No Source:/Last updated lines. No file paths. No inline citations or footnotes (no 【】, [1], †L9)."""
 
@@ -76,23 +78,36 @@ def generate_answer(
 ) -> dict[str, Any]:
     """Call Groq with retrieved chunks only. Returns draft answer + preferred citation."""
     url, retrieved_on = choose_citation_url(chunks, scheme_tag=scheme_tag)
+    focus = question_focus(question)
     compact = _prefer_compact_chunks(chunks, groq_context_chunks())
     context = _format_context(compact)
     user_prompt = (
         f"QUESTION: {question}\n\n"
         f"CONTEXT:\n{context}\n\n"
+        f"{focus_instruction(focus)}\n"
         "Answer in ≤3 sentences using only CONTEXT."
     )
 
     key = groq_api_key()
     if not key:
-        answer = _extractive_fallback(question, chunks)
+        answer = _extractive_fallback(question, chunks, focus=focus)
         return {
             "answer": answer,
             "source": url,
             "last_updated_from_sources": retrieved_on,
             "model": "extractive-fallback",
         }
+
+    # Fast path: plan options from Groww page title / URL slug (avoid LLM dumping Scheme Facts).
+    if focus == "plan_options":
+        plan_answer = _extractive_plan_options(chunks)
+        if plan_answer:
+            return {
+                "answer": plan_answer,
+                "source": url,
+                "last_updated_from_sources": retrieved_on,
+                "model": "extractive-plan-options",
+            }
 
     max_out = groq_max_tokens()
     effort = groq_reasoning_effort()
@@ -125,10 +140,11 @@ def generate_answer(
             )
     except Exception as exc:  # noqa: BLE001
         logger.error("Groq generation failed: %s", exc)
-        answer = _extractive_fallback(question, chunks)
+        answer = _extractive_fallback(question, chunks, focus=focus)
 
     answer = _strip_meta_lines(answer)
     answer = strip_inline_citations(answer)
+    answer = trim_unasked_facts(answer, focus)
     return {
         "answer": answer,
         "source": url,
@@ -148,8 +164,54 @@ def _strip_meta_lines(text: str) -> str:
     return "\n".join(lines).strip()
 
 
-def _extractive_fallback(question: str, chunks: list[dict[str, Any]]) -> str:
+def _extractive_plan_options(chunks: list[dict[str, Any]]) -> str | None:
+    """Pull Direct Plan – Growth from Groww page title when indexed."""
+    groww = [
+        c
+        for c in chunks
+        if str((c.get("metadata") or {}).get("publisher") or "").upper() == "GROWW"
+    ]
+    pool = groww or chunks
+    scheme_name = ""
+    for c in pool:
+        scheme_name = str((c.get("metadata") or {}).get("scheme") or "").strip()
+        if scheme_name:
+            break
+
+    text_blob = "\n".join(c.get("text") or "" for c in pool)
+    m = re.search(
+        r"(SBI[\w\s&\-]+?)\s+(Direct\s+Plan\s+Growth|Direct\s+Growth)",
+        text_blob,
+        re.I,
+    )
+    if m:
+        scheme = scheme_name or re.sub(r"\s+", " ", m.group(1)).strip()
+        plan_raw = m.group(2).title()
+        plan = "Direct Plan – Growth" if "direct" in plan_raw.lower() else plan_raw
+        return (
+            f"According to the indexed Groww page, {scheme} is listed as {plan}. "
+            "The indexed corpus covers this Direct Growth option only."
+        )
+
+    for c in pool:
+        url = str((c.get("metadata") or {}).get("url") or "")
+        if "direct-growth" in url or "direct-plan-growth" in url:
+            scheme = scheme_name or "This scheme"
+            return (
+                f"According to the indexed Groww page, {scheme} is offered as "
+                "Direct Plan – Growth. The indexed corpus covers this Direct Growth option only."
+            )
+    return None
+
+
+def _extractive_fallback(
+    question: str, chunks: list[dict[str, Any]], *, focus: str = "general"
+) -> str:
     """Simple fact pull when Groq is unavailable — prefers Groww Scheme Facts."""
+    if focus == "plan_options":
+        plan = _extractive_plan_options(chunks)
+        if plan:
+            return plan
     q = question.lower()
     groww_facts = [
         c

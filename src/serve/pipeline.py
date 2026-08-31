@@ -86,7 +86,7 @@ def answer_question(question: str) -> dict[str, Any]:
     if intent in REFUSAL_INTENTS:
         draft = refuse(intent, scheme_tag=scheme)
         final, issues = validate_response(
-            draft, intent=intent, scheme_tag=scheme, prefer_groww=False
+            draft, intent=intent, scheme_tag=scheme, prefer_groww=False, question=text
         )
         latency_ms = int((time.perf_counter() - t0) * 1000)
         logger.info(
@@ -105,7 +105,7 @@ def answer_question(question: str) -> dict[str, Any]:
     if result.low_score:
         draft = not_in_corpus(scheme_tag=scheme)
         final, issues = validate_response(
-            draft, intent=intent, scheme_tag=scheme, prefer_groww=True
+            draft, intent=intent, scheme_tag=scheme, prefer_groww=True, question=text
         )
         latency_ms = int((time.perf_counter() - t0) * 1000)
         logger.info(
@@ -142,7 +142,7 @@ def answer_question(question: str) -> dict[str, Any]:
         "cite_sbi": cite_sbi,
     }
     final, issues = validate_response(
-        draft, intent=intent, scheme_tag=scheme, prefer_groww=not cite_sbi
+        draft, intent=intent, scheme_tag=scheme, prefer_groww=not cite_sbi, question=text
     )
     latency_ms = int((time.perf_counter() - t0) * 1000)
     logger.info(
