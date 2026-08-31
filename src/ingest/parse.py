@@ -442,7 +442,14 @@ def parse_pdf(row: SourceRow, path: Path) -> ParsedDocument:
     sections = _split_pdf_sections(body)
     facts = _extract_pdf_facts(body)
     # Prefer section snippets for facts when available
-    for key in ("exit_load", "lock_in", "expense_ratio", "minimum_investment", "benchmark"):
+    for key in (
+        "exit_load",
+        "lock_in",
+        "expense_ratio",
+        "minimum_investment",
+        "benchmark",
+        "portfolio_turnover",
+    ):
         if key in sections and key not in facts:
             facts[key] = normalize_whitespace(sections[key][:400])
     return ParsedDocument(
@@ -484,6 +491,8 @@ _SECTION_HEADERS = [
     ("riskometer", "riskometer"),
     ("product labelling", "riskometer"),
     ("risk factors", "risk_factors"),
+    ("portfolio turnover ratio", "portfolio_turnover"),
+    ("portfolio turnover", "portfolio_turnover"),
 ]
 
 
@@ -553,6 +562,13 @@ def _extract_pdf_facts(text: str) -> dict[str, str]:
     m = re.search(r"(benchmark[^\n]{0,120})", text, re.I)
     if m:
         facts["benchmark"] = normalize_whitespace(m.group(1))
+    m = re.search(
+        r"(portfolio turnover ratio[:\s]+[\d.]+\s*(?:\([^)]*\))?)",
+        text,
+        re.I,
+    )
+    if m:
+        facts["portfolio_turnover"] = normalize_whitespace(m.group(1))
     return facts
 
 

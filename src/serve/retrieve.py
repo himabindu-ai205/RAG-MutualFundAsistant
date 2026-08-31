@@ -46,7 +46,65 @@ def _field_keywords(question: str) -> set[str]:
         tags.add("riskometer")
     if re.search(r"benchmark", q):
         tags.add("benchmark")
+    if re.search(r"portfolio\s*turnover|turnover\s*ratio|\bptr\b", q):
+        tags.add("portfolio_turnover")
+    if re.search(r"dividend|idcw|income\s+distribution", q):
+        tags.add("dividend")
+    if re.search(r"investment\s+objective|fund\s+objective", q):
+        tags.add("investment_objective")
+    if re.search(r"asset\s+allocation", q):
+        tags.add("asset_allocation")
     return tags
+
+
+def _groww_facts_chunks(chunks: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Groww Scheme Facts chunks only — ignore noisy full_document windows."""
+    return [
+        c
+        for c in chunks
+        if str((c.get("metadata") or {}).get("publisher") or "").upper() == "GROWW"
+        and (
+            "fact" in str((c.get("metadata") or {}).get("section_title") or "").lower()
+            or "#facts#" in str(c.get("chunk_id") or "")
+        )
+    ]
+
+
+def _is_full_document_chunk(chunk: dict[str, Any]) -> bool:
+    meta = chunk.get("metadata") or {}
+    section = str(meta.get("section_title") or "").lower()
+    cid = str(chunk.get("chunk_id") or "")
+    return section in {"", "full_document"} or "#full#" in cid
+
+
+def _has_numeric_portfolio_turnover(text: str) -> bool:
+    return bool(re.search(r"portfolio turnover ratio[:\s]+[\d.]+", text, re.I))
+
+
+def _pdf_citation_rank(chunk: dict[str, Any], fields: set[str]) -> tuple[int, int, int, int, float]:
+    """Rank SBI PDF chunks: section match, numeric PTR, KIM before SID, then score."""
+    meta = chunk.get("metadata") or {}
+    doc = str(meta.get("doc_type") or "").upper()
+    url = str(meta.get("url") or "").lower()
+    text = chunk.get("text") or ""
+    is_pdf = url.endswith(".pdf") or doc in {"KIM", "SID"}
+    if not is_pdf:
+        return (3, 9, 9, 9, 0.0)
+
+    if fields and _chunk_mentions_field(chunk, fields):
+        section_rank = 1 if _is_full_document_chunk(chunk) else 0
+    else:
+        section_rank = 2
+
+    numeric_rank = (
+        0
+        if "portfolio_turnover" in fields and _has_numeric_portfolio_turnover(text)
+        else 1
+    )
+    kim_rank = 0 if doc == "KIM" or "/kim---" in url else 1
+    pri = int(meta.get("priority") or 99)
+    score = float(chunk.get("score") or 0.0)
+    return (section_rank, numeric_rank, kim_rank, pri, -score)
 
 
 def _chunk_mentions_field(chunk: dict[str, Any], fields: set[str]) -> bool:
@@ -70,6 +128,20 @@ def _chunk_mentions_field(chunk: dict[str, Any], fields: set[str]) -> bool:
         if f == "ter" and ("expense" in section or "ter" in text):
             return True
         if f == "sip" and ("sip" in text or "minimum" in section):
+            return True
+        if f == "portfolio_turnover" and (
+            "portfolio turnover" in text or "turnover ratio" in text
+        ):
+            return True
+        if f == "dividend" and ("dividend" in text or "idcw" in text):
+            return True
+        if f == "investment_objective" and (
+            "investment objective" in text or "objective of the scheme" in text
+        ):
+            return True
+        if f == "asset_allocation" and (
+            "asset allocation" in text or "asset allocation" in section
+        ):
             return True
     return False
 
@@ -123,14 +195,32 @@ def retrieve(
         or int((h.get("metadata") or {}).get("priority") or 99) == 1
     ]
     if scheme_tag and groww_hits:
-        # Put Groww first, then fill with other high-score hits
-        others = [h for h in hits if h not in groww_hits]
-        hits = groww_hits + others
+        if fields:
+            groww_field = [
+                h for h in _groww_facts_chunks(groww_hits) if _chunk_mentions_field(h, fields)
+            ]
+            sbi_field = [
+                h
+                for h in hits
+                if h not in groww_hits and _chunk_mentions_field(h, fields)
+            ]
+            if sbi_field and not groww_field:
+                # Groww lacks this field — lead with best matching KIM/SID PDF chunks
+                sbi_field = sorted(sbi_field, key=lambda c: _pdf_citation_rank(c, fields))
+                rest = [h for h in hits if h not in sbi_field and h not in groww_hits]
+                hits = sbi_field + groww_hits + rest
+            else:
+                others = [h for h in hits if h not in groww_hits]
+                hits = groww_hits + others
+        else:
+            others = [h for h in hits if h not in groww_hits]
+            hits = groww_hits + others
 
     # Prefer chunks that mention the asked field among Groww first
     if fields:
         field_hits = [h for h in hits if _chunk_mentions_field(h, fields)]
         if field_hits:
+            field_hits = sorted(field_hits, key=lambda c: _pdf_citation_rank(c, fields))
             rest = [h for h in hits if h not in field_hits]
             hits = field_hits + rest
 
@@ -145,6 +235,52 @@ def retrieve(
         low_score=low,
         groww_url=groww_urls.get(scheme_tag or "") if scheme_tag else None,
     )
+
+
+def best_pdf_citation(chunks: list[dict[str, Any]], question: str) -> tuple[str, str]:
+    """Best SBI PDF URL when Groww lacks the asked field."""
+    fields = _field_keywords(question)
+    candidates: list[dict[str, Any]] = []
+    for c in chunks:
+        meta = c.get("metadata") or {}
+        if str(meta.get("publisher") or "").upper() == "GROWW":
+            continue
+        url = str(meta.get("url") or "")
+        if url.startswith("http"):
+            candidates.append(c)
+
+    if fields:
+        matched = [c for c in candidates if _chunk_mentions_field(c, fields)]
+        if matched:
+            candidates = matched
+        # Portfolio turnover: prefer KIM numeric ratio (page 9) over SID policy text
+        if "portfolio_turnover" in fields:
+            numeric_kim = [
+                c
+                for c in candidates
+                if str((c.get("metadata") or {}).get("doc_type") or "").upper() == "KIM"
+                and _has_numeric_portfolio_turnover(c.get("text") or "")
+            ]
+            if numeric_kim:
+                candidates = numeric_kim
+
+    if not candidates:
+        return "", ""
+
+    best = min(candidates, key=lambda c: _pdf_citation_rank(c, fields))
+    meta = best.get("metadata") or {}
+    return str(meta.get("url") or ""), str(meta.get("retrieved_on") or "")
+
+
+def groww_has_field(chunks: list[dict[str, Any]], question: str) -> bool:
+    """True when Groww Scheme Facts contains the specific field asked about."""
+    fields = _field_keywords(question)
+    groww = _groww_facts_chunks(chunks)
+    if not groww:
+        return False
+    if not fields:
+        return True
+    return any(_chunk_mentions_field(c, fields) for c in groww)
 
 
 def choose_citation_url(chunks: list[dict[str, Any]], *, scheme_tag: str | None) -> tuple[str, str]:

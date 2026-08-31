@@ -27,7 +27,7 @@ OVERLAP_RATIO = 0.12  # 10–15%
 MICRO_SECTION_TOKENS = 50  # merge Groww micro-sections into Facts
 # Cap SID/KIM full windows so branch lists / legalese do not dominate the index
 MAX_FULL_WINDOWS_SID = 10
-MAX_FULL_WINDOWS_KIM = 6
+MAX_FULL_WINDOWS_KIM = 10
 MAX_FULL_WINDOWS_DEFAULT = 20
 
 SECTION_TITLE_MAP = {
@@ -41,6 +41,7 @@ SECTION_TITLE_MAP = {
     "benchmark": "Benchmark",
     "investment_objective": "Investment Objective",
     "asset_allocation": "Asset Allocation",
+    "portfolio_turnover": "Portfolio Turnover",
     "risk_factors": "Risk Factors",
     "facts": "Scheme Facts",
     "hub": "Hub Overview",

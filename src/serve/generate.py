@@ -14,26 +14,38 @@ from src.serve.config import (
     groq_model,
     groq_reasoning_effort,
 )
-from src.serve.retrieve import choose_citation_url
+from src.serve.retrieve import (
+    _chunk_mentions_field,
+    _field_keywords,
+    _has_numeric_portfolio_turnover,
+    choose_citation_url,
+)
 from src.serve.question_focus import focus_instruction, question_focus, trim_unasked_facts
 from src.serve.text_clean import strip_inline_citations
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """Facts-only SBI mutual fund FAQ (Groww-primary).
-Use CONTEXT only. Prefer GROWW/priority=1.
+SYSTEM_PROMPT = """Facts-only SBI mutual fund FAQ (Groww-primary, SBI PDF fallback).
+Use CONTEXT only. Prefer GROWW/priority=1 when it contains the asked field; otherwise use SBI SID/KIM PDF text.
 Answer ONLY the specific fact(s) asked — do not add NAV, SIP, expense ratio, exit load, or other fields unless the question asks for them.
 No advice, comparisons, return math, or invented numbers. ≤3 short sentences.
 No Source:/Last updated lines. No file paths. No inline citations or footnotes (no 【】, [1], †L9)."""
 
 
-def _prefer_compact_chunks(chunks: list[dict[str, Any]], limit: int) -> list[dict[str, Any]]:
+def _prefer_compact_chunks(
+    chunks: list[dict[str, Any]], limit: int, *, question: str = ""
+) -> list[dict[str, Any]]:
     """Prefer Scheme Facts / short field sections to cut input tokens."""
+    fields = _field_keywords(question) if question else set()
 
-    def rank(ch: dict[str, Any]) -> tuple[int, int]:
+    def rank(ch: dict[str, Any]) -> tuple[int, int, int]:
         meta = ch.get("metadata") or {}
         section = str(meta.get("section_title") or "").lower()
         pri = int(meta.get("priority") or 99)
+        if fields and _chunk_mentions_field(ch, fields):
+            field_rank = 0
+        else:
+            field_rank = 1
         if "fact" in section:
             tip = 0
         elif section in {
@@ -50,7 +62,7 @@ def _prefer_compact_chunks(chunks: list[dict[str, Any]], limit: int) -> list[dic
             tip = 3
         else:
             tip = 2
-        return (tip, pri)
+        return (field_rank, tip, pri)
 
     ordered = sorted(chunks, key=rank)
     return ordered[:limit]
@@ -79,7 +91,7 @@ def generate_answer(
     """Call Groq with retrieved chunks only. Returns draft answer + preferred citation."""
     url, retrieved_on = choose_citation_url(chunks, scheme_tag=scheme_tag)
     focus = question_focus(question)
-    compact = _prefer_compact_chunks(chunks, groq_context_chunks())
+    compact = _prefer_compact_chunks(chunks, groq_context_chunks(), question=question)
     context = _format_context(compact)
     user_prompt = (
         f"QUESTION: {question}\n\n"
@@ -107,6 +119,16 @@ def generate_answer(
                 "source": url,
                 "last_updated_from_sources": retrieved_on,
                 "model": "extractive-plan-options",
+            }
+
+    if "portfolio_turnover" in _field_keywords(question):
+        ptr_answer = _extractive_portfolio_turnover(chunks)
+        if ptr_answer:
+            return {
+                "answer": ptr_answer,
+                "source": url,
+                "last_updated_from_sources": retrieved_on,
+                "model": "extractive-portfolio-turnover",
             }
 
     max_out = groq_max_tokens()
@@ -204,6 +226,22 @@ def _extractive_plan_options(chunks: list[dict[str, Any]]) -> str | None:
     return None
 
 
+def _extractive_portfolio_turnover(chunks: list[dict[str, Any]]) -> str | None:
+    """Pull numeric Portfolio Turnover Ratio from KIM (typically page 9)."""
+    for c in chunks:
+        meta = c.get("metadata") or {}
+        if str(meta.get("doc_type") or "").upper() != "KIM":
+            continue
+        text = c.get("text") or ""
+        if not _has_numeric_portfolio_turnover(text):
+            continue
+        m = re.search(r"portfolio turnover ratio[:\s]+([\d.]+)", text, re.I)
+        if m:
+            scheme = str(meta.get("scheme") or "This scheme")
+            return f"The portfolio turnover ratio for {scheme} is {m.group(1)}."
+    return None
+
+
 def _extractive_fallback(
     question: str, chunks: list[dict[str, Any]], *, focus: str = "general"
 ) -> str:
@@ -212,6 +250,10 @@ def _extractive_fallback(
         plan = _extractive_plan_options(chunks)
         if plan:
             return plan
+    if "portfolio_turnover" in _field_keywords(question):
+        ptr = _extractive_portfolio_turnover(chunks)
+        if ptr:
+            return ptr
     q = question.lower()
     groww_facts = [
         c
