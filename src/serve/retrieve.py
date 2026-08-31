@@ -57,17 +57,56 @@ def _field_keywords(question: str) -> set[str]:
     return tags
 
 
+def _is_groww_chunk(chunk: dict[str, Any]) -> bool:
+    return str((chunk.get("metadata") or {}).get("publisher") or "").upper() == "GROWW"
+
+
 def _groww_facts_chunks(chunks: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Groww Scheme Facts chunks only — ignore noisy full_document windows."""
     return [
         c
         for c in chunks
-        if str((c.get("metadata") or {}).get("publisher") or "").upper() == "GROWW"
+        if _is_groww_chunk(c)
         and (
             "fact" in str((c.get("metadata") or {}).get("section_title") or "").lower()
             or "#facts#" in str(c.get("chunk_id") or "")
         )
     ]
+
+
+def _ensure_groww_facts_in_hits(
+    hits: list[dict[str, Any]],
+    *,
+    scheme_tag: str,
+    cfg: EmbedConfig,
+) -> list[dict[str, Any]]:
+    """Pin Groww Scheme Facts into retrieval when semantic search skips the short chunk."""
+    if any("#facts#" in str(h.get("chunk_id") or "") for h in hits):
+        return hits
+    try:
+        extra = query_chunks(
+            "scheme facts expense ratio exit load minimum sip",
+            n_results=6,
+            config=cfg,
+            where={"scheme_tag": scheme_tag},
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("Groww facts lookup failed for %s: %s", scheme_tag, exc)
+        return hits
+    facts = _groww_facts_chunks(extra)
+    if not facts:
+        return hits
+    existing = {h.get("chunk_id") for h in hits}
+    prepend = [f for f in facts if f.get("chunk_id") not in existing]
+    return prepend + hits if prepend else hits
+
+
+def _field_hit_rank(chunk: dict[str, Any], fields: set[str]) -> tuple[Any, ...]:
+    """Prefer Groww Scheme Facts for fields Groww publishes; else rank SBI PDF chunks."""
+    if _is_groww_chunk(chunk):
+        facts_rank = 0 if "#facts#" in str(chunk.get("chunk_id") or "") else 1
+        return (0, facts_rank, -float(chunk.get("score") or 0.0))
+    return (1, *_pdf_citation_rank(chunk, fields))
 
 
 def _is_full_document_chunk(chunk: dict[str, Any]) -> bool:
@@ -125,7 +164,7 @@ def _chunk_mentions_field(chunk: dict[str, Any], fields: set[str]) -> bool:
             return True
         if f == "lock_in" and "lock" in section:
             return True
-        if f == "ter" and ("expense" in section or "ter" in text):
+        if f == "ter" and ("expense ratio" in text or "expense" in section):
             return True
         if f == "sip" and ("sip" in text or "minimum" in section):
             return True
@@ -186,13 +225,15 @@ def retrieve(
             rest = [h for h in hits if h not in preferred]
             hits = preferred + rest
 
+    if scheme_tag and hits:
+        hits = _ensure_groww_facts_in_hits(hits, scheme_tag=scheme_tag, cfg=cfg)
+
     fields = _field_keywords(question)
     # Ensure at least one Groww chunk when scheme is named
     groww_hits = [
         h
         for h in hits
-        if str((h.get("metadata") or {}).get("publisher") or "").upper() == "GROWW"
-        or int((h.get("metadata") or {}).get("priority") or 99) == 1
+        if _is_groww_chunk(h) or int((h.get("metadata") or {}).get("priority") or 99) == 1
     ]
     if scheme_tag and groww_hits:
         if fields:
@@ -216,11 +257,11 @@ def retrieve(
             others = [h for h in hits if h not in groww_hits]
             hits = groww_hits + others
 
-    # Prefer chunks that mention the asked field among Groww first
+    # Prefer chunks that mention the asked field; Groww facts before SBI PDF sections
     if fields:
         field_hits = [h for h in hits if _chunk_mentions_field(h, fields)]
         if field_hits:
-            field_hits = sorted(field_hits, key=lambda c: _pdf_citation_rank(c, fields))
+            field_hits = sorted(field_hits, key=lambda c: _field_hit_rank(c, fields))
             rest = [h for h in hits if h not in field_hits]
             hits = field_hits + rest
 
@@ -275,12 +316,24 @@ def best_pdf_citation(chunks: list[dict[str, Any]], question: str) -> tuple[str,
 def groww_has_field(chunks: list[dict[str, Any]], question: str) -> bool:
     """True when Groww Scheme Facts contains the specific field asked about."""
     fields = _field_keywords(question)
-    groww = _groww_facts_chunks(chunks)
+    groww_all = [c for c in chunks if _is_groww_chunk(c)]
+    groww = _groww_facts_chunks(chunks) or groww_all
     if not groww:
         return False
     if not fields:
         return True
-    return any(_chunk_mentions_field(c, fields) for c in groww)
+    if any(_chunk_mentions_field(c, fields) for c in groww):
+        return True
+    blob = "\n".join(c.get("text") or "" for c in groww)
+    if "ter" in fields and re.search(r"Expense Ratio:\s*[\d.]+%", blob, re.I):
+        return True
+    if "exit_load" in fields and re.search(r"Exit Load:", blob, re.I):
+        return True
+    if "sip" in fields and re.search(r"Min Sip:", blob, re.I):
+        return True
+    if "nav" in fields and re.search(r"\bNav:\s*₹", blob, re.I):
+        return True
+    return False
 
 
 def choose_citation_url(chunks: list[dict[str, Any]], *, scheme_tag: str | None) -> tuple[str, str]:

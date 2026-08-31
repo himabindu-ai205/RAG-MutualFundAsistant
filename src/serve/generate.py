@@ -131,6 +131,16 @@ def generate_answer(
                 "model": "extractive-portfolio-turnover",
             }
 
+    if "ter" in _field_keywords(question):
+        ter_answer = _extractive_expense_ratio(chunks)
+        if ter_answer:
+            return {
+                "answer": ter_answer,
+                "source": url,
+                "last_updated_from_sources": retrieved_on,
+                "model": "extractive-expense-ratio",
+            }
+
     max_out = groq_max_tokens()
     effort = groq_reasoning_effort()
     try:
@@ -226,6 +236,19 @@ def _extractive_plan_options(chunks: list[dict[str, Any]]) -> str | None:
     return None
 
 
+def _extractive_expense_ratio(chunks: list[dict[str, Any]]) -> str | None:
+    """Pull actual TER from Groww Scheme Facts (not KIM regulatory slabs)."""
+    for c in chunks:
+        if str((c.get("metadata") or {}).get("publisher") or "").upper() != "GROWW":
+            continue
+        text = c.get("text") or ""
+        m = re.search(r"Expense Ratio:\s*([\d.]+%)", text, re.I)
+        if m:
+            scheme = str((c.get("metadata") or {}).get("scheme") or "This scheme")
+            return f"The expense ratio (TER) for {scheme} is {m.group(1)}."
+    return None
+
+
 def _extractive_portfolio_turnover(chunks: list[dict[str, Any]]) -> str | None:
     """Pull numeric Portfolio Turnover Ratio from KIM (typically page 9)."""
     for c in chunks:
@@ -254,6 +277,10 @@ def _extractive_fallback(
         ptr = _extractive_portfolio_turnover(chunks)
         if ptr:
             return ptr
+    if "ter" in _field_keywords(question):
+        ter = _extractive_expense_ratio(chunks)
+        if ter:
+            return ter
     q = question.lower()
     groww_facts = [
         c
