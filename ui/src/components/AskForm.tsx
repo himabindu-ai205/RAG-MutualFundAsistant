@@ -33,6 +33,12 @@ export function AskForm({
           value={question}
           disabled={disabled}
           onChange={(event) => onQuestionChange(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault();
+              onSubmit();
+            }
+          }}
           placeholder="Type a factual question about an in-scope SBI scheme…"
           autoComplete="off"
           className="w-full bg-surface font-body-md text-body-md text-on-surface placeholder-outline-variant border border-outline-variant rounded-xl p-md focus:border-teal-button focus:ring-1 focus:ring-teal-button focus-visible:outline-none transition-shadow resize-none disabled:opacity-70"
