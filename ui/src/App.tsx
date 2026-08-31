@@ -1,11 +1,10 @@
 import { useCallback, useState } from "react";
 import { AnswerPanel, type AnswerState } from "./components/AnswerPanel";
 import { AskForm } from "./components/AskForm";
-import { DisclaimerBanner } from "./components/DisclaimerBanner";
 import { ExampleChips } from "./components/ExampleChips";
 import { WelcomeCard } from "./components/WelcomeCard";
 import { askQuestion, ChatRequestError } from "./lib/chat";
-import { DISCLAIMER, EMPTY_QUESTION_ERROR } from "./lib/constants";
+import { EMPTY_QUESTION_ERROR } from "./lib/constants";
 
 /** Ported from stitch_sbi_mutual_fund_faq_assistant/code1.html (home) and code.html (refusal). */
 
@@ -51,12 +50,6 @@ export default function App() {
             </h1>
           </div>
         </div>
-        {/* Always visible without scrolling — required disclaimer */}
-        <div className="border-t border-outline-variant/40">
-          <div className="w-full max-w-container-max mx-auto px-gutter py-sm">
-            <DisclaimerBanner />
-          </div>
-        </div>
       </header>
 
       <main className="flex-grow w-full max-w-container-max mx-auto px-gutter py-lg flex flex-col gap-lg">
@@ -95,7 +88,6 @@ export default function App() {
           <p className="font-body-sm text-body-sm text-on-surface-variant m-0">
             © SBI Mutual Fund FAQ Assistant. Facts-only information source.
           </p>
-          <p className="font-label-md text-label-md text-on-surface-variant m-0">{DISCLAIMER}</p>
         </div>
       </footer>
     </div>
