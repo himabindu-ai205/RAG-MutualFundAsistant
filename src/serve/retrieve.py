@@ -7,7 +7,8 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
-from src.ingest.embed import EmbedConfig, query_chunks
+from src.ingest.embed import EmbedConfig, get_chunks_by_ids, query_chunks
+from src.ingest.registry import load_sources
 from src.serve.config import chroma_dir, groww_url_by_scheme
 
 logger = logging.getLogger(__name__)
@@ -15,6 +16,20 @@ logger = logging.getLogger(__name__)
 TOP_K = 5
 # Combined score floor after priority boost (smoke hits ~0.55+)
 SCORE_THRESHOLD = 0.42
+
+_GROWW_FACTS_ID_BY_SCHEME: dict[str, str] | None = None
+
+
+def _groww_facts_chunk_id(scheme_tag: str) -> str:
+    """Stable Groww Scheme Facts chunk id for a scheme_tag (e.g. groww-flexicap#facts#0)."""
+    global _GROWW_FACTS_ID_BY_SCHEME
+    if _GROWW_FACTS_ID_BY_SCHEME is None:
+        mapping: dict[str, str] = {}
+        for row in load_sources():
+            if row.publisher.upper() == "GROWW" and row.scheme_tag:
+                mapping[row.scheme_tag] = f"{row.source_id}#facts#0"
+        _GROWW_FACTS_ID_BY_SCHEME = mapping
+    return _GROWW_FACTS_ID_BY_SCHEME.get(scheme_tag, "")
 
 
 @dataclass
@@ -83,17 +98,15 @@ def _ensure_groww_facts_in_hits(
     """Pin Groww Scheme Facts into retrieval when semantic search skips the short chunk."""
     if any("#facts#" in str(h.get("chunk_id") or "") for h in hits):
         return hits
+    chunk_id = _groww_facts_chunk_id(scheme_tag)
+    if not chunk_id:
+        return hits
     try:
-        extra = query_chunks(
-            "scheme facts expense ratio exit load minimum sip",
-            n_results=6,
-            config=cfg,
-            where={"scheme_tag": scheme_tag},
-        )
+        facts = get_chunks_by_ids([chunk_id], config=cfg)
     except Exception as exc:  # noqa: BLE001
         logger.debug("Groww facts lookup failed for %s: %s", scheme_tag, exc)
         return hits
-    facts = _groww_facts_chunks(extra)
+    facts = _groww_facts_chunks(facts)
     if not facts:
         return hits
     existing = {h.get("chunk_id") for h in hits}

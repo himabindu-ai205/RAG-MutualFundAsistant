@@ -29,6 +29,7 @@ COLLECTION_NAME = "mf_faq_chunks"
 # Reuse embedder + Chroma client across online queries (avoid ~10s cold load per request).
 _EMBEDDER_CACHE: dict[str, object] = {}
 _CHROMA_QUERY_CACHE: dict[str, object] = {}
+_COLLECTION_CACHE: dict[str, object] = {}
 
 KEYWORD_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("nav", re.compile(r"\bNAV\b|net\s+asset\s+value", re.I)),
@@ -111,7 +112,7 @@ def _get_embedder(model_name: str):
 
 
 def _get_query_client(chroma_dir: Path):
-    """Reuse Chroma client + collection across requests (same path)."""
+    """Reuse Chroma client across requests (same path)."""
     key = str(chroma_dir.resolve())
     if key not in _CHROMA_QUERY_CACHE:
         import chromadb
@@ -123,6 +124,16 @@ def _get_query_client(chroma_dir: Path):
         )
         _CHROMA_QUERY_CACHE[key] = client
     return _CHROMA_QUERY_CACHE[key]
+
+
+def _get_query_collection(cfg: EmbedConfig):
+    """Reuse Chroma collection handle across requests (avoids reopening SQLite each query)."""
+    key = f"{cfg.chroma_dir.resolve()}::{cfg.collection_name}"
+    if key not in _COLLECTION_CACHE:
+        client = _get_query_client(cfg.chroma_dir)
+        _COLLECTION_CACHE[key] = client.get_collection(cfg.collection_name)
+        logger.info("Cached Chroma collection %s at %s", cfg.collection_name, cfg.chroma_dir)
+    return _COLLECTION_CACHE[key]
 
 
 def _get_collection(
@@ -233,6 +244,37 @@ def embed_chunks(
     return summary
 
 
+def get_chunks_by_ids(
+    chunk_ids: list[str],
+    *,
+    config: EmbedConfig | None = None,
+) -> list[dict[str, Any]]:
+    """Fetch chunks by id without embedding (fast path for known Groww Scheme Facts)."""
+    if not chunk_ids:
+        return []
+    cfg = config or EmbedConfig()
+    collection = _get_query_collection(cfg)
+    raw = collection.get(ids=chunk_ids, include=["documents", "metadatas"])
+    ids = raw.get("ids") or []
+    docs = raw.get("documents") or []
+    metas = raw.get("metadatas") or []
+    out: list[dict[str, Any]] = []
+    for i, chunk_id in enumerate(ids):
+        if not chunk_id:
+            continue
+        meta = metas[i] or {}
+        out.append(
+            {
+                "chunk_id": chunk_id,
+                "text": docs[i] or "",
+                "metadata": meta,
+                "distance": 0.0,
+                "score": 1.0,
+            }
+        )
+    return out
+
+
 def query_chunks(
     query: str,
     *,
@@ -242,8 +284,7 @@ def query_chunks(
 ) -> list[dict[str, Any]]:
     """Query Chroma and lightly re-rank by priority + keyword overlap (hybrid)."""
     cfg = config or EmbedConfig()
-    client = _get_query_client(cfg.chroma_dir)
-    collection = client.get_collection(cfg.collection_name)
+    collection = _get_query_collection(cfg)
     model = _get_embedder(cfg.model_name)
     q_vec = model.encode([query], convert_to_numpy=True, normalize_embeddings=True)[0]
 
@@ -296,6 +337,7 @@ def warmup_query_engine(config: EmbedConfig | None = None) -> None:
     cfg = config or EmbedConfig()
     try:
         _get_embedder(cfg.model_name)
+        _get_query_collection(cfg)
         query_chunks("ELSS lock-in", n_results=1, config=cfg)
         logger.info("Query engine warmed up (model=%s chroma=%s)", cfg.model_name, cfg.chroma_dir)
     except Exception as exc:  # noqa: BLE001

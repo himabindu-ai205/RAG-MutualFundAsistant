@@ -65,7 +65,9 @@ def answer_question(question: str) -> dict[str, Any]:
         return final
 
     # factual / process_howto
+    t_ret0 = time.perf_counter()
     result = retrieve(text, scheme_tag=scheme, intent=intent)
+    retrieve_ms = int((time.perf_counter() - t_ret0) * 1000)
     if result.low_score:
         draft = not_in_corpus(scheme_tag=scheme)
         final, issues = validate_response(
@@ -73,17 +75,20 @@ def answer_question(question: str) -> dict[str, Any]:
         )
         latency_ms = int((time.perf_counter() - t0) * 1000)
         logger.info(
-            "request_id=%s intent=%s latency_ms=%s validator=%s source_host=%s low_score=1",
+            "request_id=%s intent=%s latency_ms=%s retrieve_ms=%s validator=%s source_host=%s low_score=1",
             request_id,
             intent,
             latency_ms,
+            retrieve_ms,
             "pass" if not issues else "fixed:" + ",".join(issues),
             _host(final["source"]),
         )
         final["request_id"] = request_id
         return final
 
+    t_gen0 = time.perf_counter()
     gen = generate_answer(text, result.chunks, scheme_tag=scheme)
+    generate_ms = int((time.perf_counter() - t_gen0) * 1000)
     cite_sbi = not groww_has_field(result.chunks, text)
     if cite_sbi:
         url, retrieved_on = best_pdf_citation(result.chunks, text)
@@ -105,10 +110,12 @@ def answer_question(question: str) -> dict[str, Any]:
     )
     latency_ms = int((time.perf_counter() - t0) * 1000)
     logger.info(
-        "request_id=%s intent=%s latency_ms=%s validator=%s source_host=%s chunks=%d",
+        "request_id=%s intent=%s latency_ms=%s retrieve_ms=%s generate_ms=%s validator=%s source_host=%s chunks=%d",
         request_id,
         intent,
         latency_ms,
+        retrieve_ms,
+        generate_ms,
         "pass" if not issues else "fixed:" + ",".join(issues),
         _host(final["source"]),
         len(result.chunks),
