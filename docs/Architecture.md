@@ -117,15 +117,18 @@ Two pipelines: **offline corpus build** and **online query serving**.
 ```mermaid
 flowchart TB
   subgraph offline [Offline — Corpus Build]
-    GW[Groww scheme HTML<br/>5 URLs — primary]
-    PDF[SBI KIM / SID PDFs<br/>supporting]
-    OFF[Official SBI / AMFI / SEBI pages]
+    REG[Source registry<br/>docs/sources.md]
+    subgraph sources [Ingest order]
+      direction LR
+      GW[Groww scheme HTML<br/>5 URLs — primary]
+      PDF[SBI KIM / SID PDFs<br/>supporting]
+      OFF[Official SBI / AMFI / SEBI pages]
+    end
     DF[Document Fetcher]
     PN[Parser and Normalizer]
     CM[Chunker + Metadata]
     EM[Embedding Model]
     VS[(Vector Store Chroma)]
-    REG[Source registry<br/>docs/sources.md]
     REG --> DF
     GW --> DF
     PDF --> DF
@@ -134,7 +137,7 @@ flowchart TB
   end
 
   subgraph online [Online — Query Serving]
-    UI[Streamlit UI]
+    UI[Google Stitch UI]
     API[FastAPI POST /chat]
     QC[Query Classifier]
     RH[Refusal Handler]
@@ -246,11 +249,18 @@ Normalization:
 - Do **not** alias Small Midcap ↔ Small Cap until confirmed.  
 - Stamp every parsed document with `publisher`, `doc_type`, `url`, `retrieved_on`.
 
-### 6.5 Chunker + Metadata
+### 6.5 Chunking strategy + Metadata
 
-Chunk **Groww pages first**, then KIM/SID. Prefer **heading-aware** splits on KIM/SID section titles (Exit Load, Expense Ratio, Minimum Application Amount, Lock-in, Benchmark, Riskometer, Investment Objective).
+**Strategy:** section-aware chunking first; sliding windows only as a fallback. Chunk **Groww pages first**, then KIM/SID and other docs.
 
-Fallback: ~500–800 tokens, 10–15% overlap.
+| Step | What happens |
+| --- | --- |
+| 1. Groww Scheme Facts | One high-signal chunk with labelled fields (expense ratio, SIP, exit load, NAV, riskometer, benchmark, AUM, etc.). Small Groww micro-sections are folded into this instead of separate chunks. |
+| 2. Heading / section splits | Prefer named sections from the parser: Exit Load, Expense Ratio, Minimum Investment, Lock-in, Benchmark, Riskometer, Investment Objective, Asset Allocation, Portfolio Turnover, and similar. Short sections stay as one chunk; long ones are windowed. |
+| 3. Sliding-window fallback | ~**500–800 tokens** (target ~650), **~12% overlap** (10–15%), with a soft preference for sentence boundaries. Full-document windows are **capped** (KIM/SID ≈ 10) so legalese does not flood the index. |
+| 4. Metadata on every chunk | Public `url`, `scheme`, `scheme_tag`, `publisher`, `priority`, `section_title`, `retrieved_on`, `doc_type`. `local_path` is ingest-only and never cited. |
+
+Principle: **structure-first (sections + Groww facts); size-based windows only when needed.**
 
 Every chunk:
 
@@ -273,12 +283,12 @@ Groww example:
 
 ```json
 {
-  "chunk_id": "groww-flexicap#expense#0",
+  "chunk_id": "groww-flexicap#facts#0",
   "scheme": "SBI Flexicap Fund",
   "doc_type": "groww_scheme",
   "publisher": "GROWW",
   "priority": 1,
-  "section_title": "Expense ratio / min SIP snapshot",
+  "section_title": "Scheme Facts",
   "url": "https://groww.in/mutual-funds/sbi-flexicap-fund-direct-growth",
   "local_path": "docs/corpus/groww/sbi-flexicap-fund-direct-growth.html",
   "retrieved_on": "2026-08-24"
@@ -306,12 +316,16 @@ Groww example:
 
 ## 7. Online — Query Serving
 
-### 7.1 Web UI (Streamlit)
+### 7.1 Web UI (Google Stitch)
+
+Designed in [Google Stitch](https://stitch.withgoogle.com) and implemented as a **React (Vite)** app in `ui/`. Prompt: [`docs/stitch-prompt-phase4.md`](./stitch-prompt-phase4.md); export under `stitch_sbi_mutual_fund_faq_assistant/`. Built assets (`ui/dist`) are served by FastAPI (or deployed separately on Vercel).
 
 - Title + welcome: **facts from Groww scheme pages** (SBI KIM/SID as supporting corpus)  
 - Visible disclaimer: **“Facts-only. No investment advice.”**  
-- Three example questions (expense ratio, ELSS lock-in, min SIP)  
+- Three example questions (expense ratio, ELSS lock-in, min SIP) — chips prefill and submit  
+- Textarea + Ask (Enter submits; Shift+Enter for a new line)  
 - Answer + one citation link + `Last updated from sources:`  
+- States: empty, loading, factual answer, refusal, empty-question error  
 - No login, KYC, PAN, phone, or email fields  
 
 ### 7.2 API
@@ -402,7 +416,7 @@ User question ──classify──► retrieve Groww+SBI chunks ──Groq──
 ```mermaid
 sequenceDiagram
   actor User
-  participant UI as Streamlit UI
+  participant UI as Google Stitch UI
   participant API as FastAPI
   participant QC as Query Classifier
   participant RH as Refusal Handler
@@ -506,7 +520,7 @@ Empty question: `400` `{ "error": "question_required" }`.
 | Embeddings | `sentence-transformers` (local) |
 | Vector DB | Chroma (`data/chroma/`) |
 | API | FastAPI `POST /chat` |
-| UI | Streamlit |
+| UI | Google Stitch → React (Vite) in `ui/` |
 | PDF | pdfplumber / pypdf |
 | HTML | httpx + BeautifulSoup |
 | Config | `.env` + `docs/sources.md` |
@@ -528,6 +542,10 @@ RAG-MutualFundAsistant/
       sid/                     # 5 SBI SID PDFs (present)
       factsheets/              # optional SBI factsheet PDFs
       shared/                  # TER, AMFI, SEBI, statement guides
+  ui/                          # Google Stitch design → React (Vite) frontend
+    src/
+    dist/                      # built static assets (served by FastAPI or Vercel)
+  stitch_sbi_mutual_fund_faq_assistant/  # Stitch HTML export + DESIGN.md
   src/
     ingest/
       fetch.py                 # Groww HTTP first + register PDFs + official HTML
@@ -541,7 +559,6 @@ RAG-MutualFundAsistant/
       retrieve.py
       generate.py              # Groq
       validate.py
-    app.py                     # Streamlit
   data/chroma/
 ```
 
@@ -560,7 +577,7 @@ Every response (fact or refusal):
 
 ## 17. Deployment, observability, evaluation
 
-- **Deploy:** local uvicorn + Streamlit; hosted URL preferred; else ≤3-minute demo. Index built **offline**.  
+- **Deploy:** FastAPI (Railway) + Google Stitch UI (`ui/` on Vercel or static `ui/dist` from FastAPI); hosted URL preferred; else ≤3-minute demo. Index built **offline**.  
 - **Logs:** request id, latency, intent, validator pass/fail, source host. No PII.  
 - **Eval set:** expense ratio, exit load, min SIP, ELSS lock-in, riskometer/benchmark, statement download; plus advisory / comparative / performance / PII refusals.  
 - **Citation check:** every factual answer host is allowlisted; **scheme facts prefer the five Groww URLs**; Groww citations only use those five paths.  
@@ -593,7 +610,7 @@ Deliverables (from the problem statement): working prototype, source list CSV/MD
 | 1 | `docs/sources.md`: **Groww URLs first (`priority=1`)**, then 10 PDF→sbimf mappings, then shared pages (15–25) |
 | 2 | **Fetch Groww HTML first** (required); parse HTML + PDFs; embed into Chroma |
 | 3 | Classifier, Groq generator, validator, FastAPI |
-| 4 | Streamlit UI (welcome, 3 examples, disclaimer) |
+| 4 | Google Stitch UI → React in `ui/` (welcome, 3 examples, disclaimer) |
 | 5 | Sample Q&A, README, eval, submit |
 
 ---

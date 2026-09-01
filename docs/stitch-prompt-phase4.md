@@ -2,14 +2,14 @@
 
 Paste the **Primary prompt** into [Google Stitch](https://stitch.withgoogle.com). Then use the follow-ups if you need extra states. Export HTML/CSS (not a screenshot-only mock) into `ui/` and wire it to FastAPI as described in [`implementation-plan.md`](./implementation-plan.md) Phase 4.
 
-**Do not use Streamlit.** This prompt is the source of truth for the Phase 4 frontend.
+**This prompt is the source of truth for the Phase 4 Google Stitch frontend.**
 
 ---
 
 ## Primary prompt (paste this)
 
 ```text
-Design a production-ready, single-purpose web UI for a facts-only Mutual Fund FAQ Assistant. This is NOT a trading app, NOT a dashboard, NOT Streamlit, and NOT a chatbot with avatars or bubbles filling the screen.
+Design a production-ready, single-purpose web UI for a facts-only Mutual Fund FAQ Assistant. This is NOT a trading app, NOT a dashboard, and NOT a chatbot with avatars or bubbles filling the screen. Build as a clean Google Stitch → React (Vite) single-page app.
 
 Product
 - Name: SBI Mutual Fund FAQ Assistant

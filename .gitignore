@@ -41,6 +41,10 @@ data/chroma/**
 docs/corpus/groww/**
 !docs/corpus/groww/.gitkeep
 
+# Local PDF text extractions (not part of indexed corpus)
+docs/corpus/kim/*.txt
+docs/corpus/sid/*.txt
+
 # Optional local caches
 .cache/
 *.log

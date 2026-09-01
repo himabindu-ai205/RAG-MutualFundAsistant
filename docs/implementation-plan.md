@@ -50,13 +50,13 @@ flowchart LR
 | 1 | Curate 15–25 sources, **Groww first** | `docs/sources.md` (+ CSV) complete; Small Cap naming decided |
 | 2 | Dual ingest → Chroma, **Groww HTML first** | Groww HTML + PDFs + shared pages chunked and embedded |
 | 3 | Facts-only chat API, **cite Groww by default** | `POST /chat` returns validated answers or refusals |
-| 4 | Minimal UI via **Google Stitch** (not Streamlit) | Welcome, 3 examples, disclaimer, ask box |
+| 4 | Minimal UI via **Google Stitch** | Welcome, 3 examples, disclaimer, ask box |
 | 5 | Deliverables | Prototype/demo, sample Q&A, README, source list |
 | 6 | **Daily GitHub Actions ingest scheduler (17:30 SGT)** | Cron runs scrape → normalize → chunk → embed → Chroma update every day |
 
 **Stack (locked):** Python 3.11+, Groq, sentence-transformers, Chroma, FastAPI, Google Stitch design → React (Vite) in `ui/`, pdfplumber/pypdf, httpx + BeautifulSoup.
 
-This plan **overrides Architecture §7.1 / §14 / `src/app.py`:** the UI is a **Google Stitch** design implemented as a **React (Vite)** app in `ui/`, served by FastAPI from `ui/dist`. **Not Streamlit.** Design source: `stitch_sbi_mutual_fund_faq_assistant/`.
+This plan **overrides Architecture §7.1 / §14:** the UI is a **Google Stitch** design implemented as a **React (Vite)** app in `ui/`, served by FastAPI from `ui/dist` (or Vercel for the frontend). Design source: `stitch_sbi_mutual_fund_faq_assistant/`.
 
 ---
 
@@ -71,7 +71,7 @@ This plan **overrides Architecture §7.1 / §14 / `src/app.py`:** the UI is a **
    - `disclaimer.txt` (must include: `Facts-only. No investment advice.`)
    - `src/ingest/__init__.py`, `src/serve/__init__.py`
    - `scripts/` helpers stubs as needed
-2. Add `requirements.txt` (or `pyproject.toml`) with: FastAPI, uvicorn, chromadb, sentence-transformers, httpx, beautifulsoup4, pdfplumber, pypdf, python-dotenv, groq. **Do not add Streamlit** (Phase 4 UI is Google Stitch + static files). If `streamlit` is already listed from an earlier draft, remove it in Phase 4.
+2. Add `requirements.txt` (or `pyproject.toml`) with: FastAPI, uvicorn, chromadb, sentence-transformers, httpx, beautifulsoup4, pdfplumber, pypdf, python-dotenv, groq. Phase 4 UI is Google Stitch + static files in `ui/` (no separate Python UI framework).
 3. Add `.env.example` with `GROQ_API_KEY=` and model name (e.g. `llama-3.1-8b-instant`). Add `.env` to `.gitignore`.
 4. Add a minimal `README.md` stub (setup TBD in Phase 5; link Architecture + this plan). State that Groww scheme URLs are the primary source.
 5. Confirm `.venv` can install deps and import chromadb / sentence_transformers / groq.
@@ -343,16 +343,14 @@ question
 
 ---
 
-## Phase 4 — Google Stitch UI (not Streamlit)
+## Phase 4 — Google Stitch UI
 
 **Goal:** Meet problem-statement UI constraints (welcome, three examples, visible disclaimer) with a **Google Stitch design** implemented as a **React (Vite) frontend** and served by FastAPI. Frame the product as a **Groww-scheme FAQ** backed by supporting SBI documents.
-
-**Do not implement Streamlit** (`src/app.py` Streamlit is cancelled). Architecture’s Streamlit references are superseded here.
 
 ### Tasks
 
 1. Generate the UI in [Google Stitch](https://stitch.withgoogle.com) using [`docs/stitch-prompt-phase4.md`](./stitch-prompt-phase4.md). Keep the Stitch export under `stitch_sbi_mutual_fund_faq_assistant/` (HTML + DESIGN.md).
-2. Implement that design as a React app in `ui/` (Vite + Tailwind). Preserve Stitch tokens (paper background, teal Ask, amber disclaimer). Do not restyle into a Streamlit clone.
+2. Implement that design as a React app in `ui/` (Vite + Tailwind). Preserve Stitch tokens (paper background, teal Ask, amber disclaimer).
 3. Serve `ui/dist` from FastAPI after `npm run build` (static mount + `/` → `index.html`). During UI work, `npm run dev` proxies `/chat` to the API. The Ask control must call existing `POST /chat` with body `{ "question": "..." }` only (same contract as Architecture §12).
 4. UI elements (must match Stitch prompt + problem statement):
    - Title / welcome: **facts from Groww scheme pages** (SBI KIM/SID used as supporting corpus)
@@ -362,7 +360,6 @@ question
    - Render `answer`, single clickable `source` (Groww by default), `last_updated_from_sources`
 5. Wire UI states: empty, loading, factual answer, refusal, empty-question error (`400 question_required`).
 6. No login, KYC, PAN, email, or phone fields. Do not send extra JSON keys the API does not need.
-7. Drop `streamlit` from `requirements.txt` if present.
 
 ### Deliverables
 
@@ -379,7 +376,7 @@ question
 | 4.2 Stitch design → React in `ui/` | **Done** — Vite + Tailwind; source `stitch_sbi_mutual_fund_faq_assistant/` |
 | 4.3 Serve `ui/dist` from FastAPI; Ask → `POST /chat` | **Done** |
 | 4.4 States: empty / loading / answer / refusal / empty error | **Done** |
-| 4.5 Remove Streamlit from deps if present | **Done** |
+| 4.5 Google Stitch UI wired to `POST /chat` | **Done** |
 
 ### Acceptance criteria
 
@@ -387,7 +384,7 @@ question
 - Example questions prefill/submit and return cited answers **with Groww URLs when the fact is on the scheme page**.
 - UI never shows filesystem paths as sources.
 - Only `question` is sent to the backend.
-- No Streamlit process, no `streamlit run`.
+- Google Stitch UI served from `ui/dist` (FastAPI) or Vercel; Ask calls `POST /chat`.
 
 ### Dependencies / notes
 
@@ -555,7 +552,7 @@ GitHub Actions (cron: 17:30 SGT / 09:30 UTC daily)
 [x] Phase 1  sources.md: Groww URLs first (priority=1), then SBI, then shared
 [x] Phase 2  fetch Groww first + parse PDFs/HTML + embed Chroma
 [x] Phase 3  classify / refuse / retrieve (Groww-ranked) / generate / validate / FastAPI
-[x] Phase 4  Google Stitch UI → React in `ui/` (not Streamlit; Groww-primary welcome)
+[x] Phase 4  Google Stitch UI → React in `ui/` (Groww-primary welcome)
 [ ] Phase 5  sample_qa (Groww citations), README, eval, prototype/demo, submit
 [x] Phase 6  GitHub Actions daily ingest @ 17:30 SGT: scrape → normalize → chunk → embed → Chroma
 ```
@@ -574,8 +571,8 @@ GitHub Actions (cron: 17:30 SGT / 09:30 UTC daily)
 | Small Cap ≠ Small Midcap | Phase 1–2 | Keep separate tags; **serve the Groww `small-midcap` page as primary** for that URL |
 | Groq invents numbers | Phase 3 generate/validate | Chunks-only prompt; validator blocks |
 | Missing factsheets/TER/statements | Phase 1–2 | Fetch before claiming those FAQ types (usually not on Groww scheme snapshot) |
-| Stitch export is visual-only | Phase 4 | Wire Ask to `POST /chat`; map `answer` / `source` / `last_updated_from_sources`; do not rebuild in Streamlit |
-| Hosted deploy hard | Phase 5 | Ship FastAPI + static `ui/` **or** ≤3-min demo video (not Streamlit Cloud) |
+| Stitch export is visual-only | Phase 4 | Wire Ask to `POST /chat`; map `answer` / `source` / `last_updated_from_sources`; implement in React `ui/` |
+| Hosted deploy hard | Phase 5 | Ship FastAPI (Railway) + Google Stitch UI on Vercel **or** ≤3-min demo video |
 | Groww fetch blocked / flaky in CI | Phase 6 | Retries + polite delay; fail job if Groww required pages fail; alert on Actions failure |
 | Chroma gitignored → stale deploy index | Phase 6 | Persist via Actions artifact and/or bot-commit branch; document how API pulls latest `data/chroma/` |
 | Cron only on default branch | Phase 6 | Merge workflow to `main`; use `workflow_dispatch` for branch testing |

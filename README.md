@@ -68,7 +68,7 @@ cd ui && npm run dev
 # http://127.0.0.1:5173/
 ```
 
-The Google Stitch export lives in `stitch_sbi_mutual_fund_faq_assistant/`. The React app in `ui/` is the implementation (not Streamlit).
+The Google Stitch export lives in `stitch_sbi_mutual_fund_faq_assistant/`. The React app in `ui/` is the production UI.
 
 ## Status
 
