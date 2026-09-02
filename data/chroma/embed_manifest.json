@@ -1,7 +1,7 @@
 {
   "collection": "mf_faq_chunks",
-  "chroma_dir": "/home/runner/work/RAG-MutualFundAsistant/RAG-MutualFundAsistant/data/chroma",
-  "model": "sentence-transformers/all-MiniLM-L6-v2",
+  "chroma_dir": "data/chroma",
+  "model": "jinaai/jina-embeddings-v2-base-en",
   "count": 224,
   "groww_chunks": 34,
   "by_publisher": {

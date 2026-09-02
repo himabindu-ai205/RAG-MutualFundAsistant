@@ -34,7 +34,7 @@ COPY disclaimer.txt .
 COPY --from=ui /ui/dist ./ui/dist
 
 # Warm the embedding model, then (re)build Chroma from committed chunks.jsonl
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')" \
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('jinaai/jina-embeddings-v2-base-en', trust_remote_code=True)" \
     && python scripts/embed_corpus.py
 
 EXPOSE 8000

@@ -21,7 +21,9 @@ from src.ingest.registry import ROOT
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+DEFAULT_MODEL = "jinaai/jina-embeddings-v2-base-en"
+# Jina v2 supports long context; cap for FAQ chunks to keep encode fast.
+DEFAULT_MAX_SEQ_LENGTH = 1024
 DEFAULT_CHROMA_DIR = ROOT / "data" / "chroma"
 DEFAULT_CHUNKS_JSONL = ROOT / "data" / "chunks.jsonl"
 COLLECTION_NAME = "mf_faq_chunks"
@@ -107,7 +109,13 @@ def _get_embedder(model_name: str):
 
     if model_name not in _EMBEDDER_CACHE:
         logger.info("Loading embedding model %s", model_name)
-        _EMBEDDER_CACHE[model_name] = SentenceTransformer(model_name)
+        kwargs: dict[str, Any] = {}
+        if "jina-embeddings" in model_name:
+            kwargs["trust_remote_code"] = True
+        model = SentenceTransformer(model_name, **kwargs)
+        if "jina-embeddings" in model_name:
+            model.max_seq_length = DEFAULT_MAX_SEQ_LENGTH
+        _EMBEDDER_CACHE[model_name] = model
     return _EMBEDDER_CACHE[model_name]
 
 

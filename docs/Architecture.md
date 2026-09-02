@@ -299,7 +299,7 @@ Groww example:
 
 ### 6.6 Embedding Model and Vector Store
 
-- Embeddings: local `sentence-transformers` (same model at ingest and query).  
+- Embeddings: local `jinaai/jina-embeddings-v2-base-en` via `sentence-transformers` (same model at ingest and query).  
 - Store: Chroma under `data/chroma/`.  
 - Metadata filters: `scheme`, `publisher`, `doc_type`, `priority`.  
 - Optional hybrid: keyword boost for scheme names and tokens such as `exit load`, `SIP`, `lock-in`, `TER`.
@@ -517,7 +517,7 @@ Empty question: `400` `{ "error": "question_required" }`.
 | --- | --- |
 | Language | Python 3.11+ |
 | LLM | Groq (`GROQ_API_KEY`, e.g. `llama-3.1-8b-instant`) |
-| Embeddings | `sentence-transformers` (local) |
+| Embeddings | `jinaai/jina-embeddings-v2-base-en` (`sentence-transformers`, local) |
 | Vector DB | Chroma (`data/chroma/`) |
 | API | FastAPI `POST /chat` |
 | UI | Google Stitch → React (Vite) in `ui/` |

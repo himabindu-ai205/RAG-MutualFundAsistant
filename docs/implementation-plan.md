@@ -188,7 +188,7 @@ This plan **overrides Architecture §7.1 / §14:** the UI is a **Google Stitch**
 
 - [x] Working ingest modules + index build script (**Groww fetch is required**) — `python scripts/build_index.py` (or `python -m src.ingest`)
 - [x] `docs/corpus/groww/` HTML snapshots for all five schemes
-- [x] Populated `data/chroma/` — ~195 chunks after quality pass (`mf_faq_chunks`, all-MiniLM-L6-v2; was 586)
+- [x] Populated `data/chroma/` — ~195 chunks after quality pass (`mf_faq_chunks`, jina-embeddings-v2-base-en; was 586)
 - [x] Log/summary of documents ingested and chunk counts by `publisher` (Groww count must be non-zero) — see `data/chroma/embed_manifest.json` (Groww=34)
 
 ### Acceptance criteria
@@ -270,7 +270,7 @@ Advisory / comparative / performance / PII / out_of_scope → `refuse.py` (no Ch
 | Step | What happens | Why (given this corpus) |
 | --- | --- | --- |
 | 1. Scheme detect | Map question → `scheme_tag` via aliases | Each scheme has ~37–38 chunks; filter cuts cross-scheme SID bleed |
-| 2. Vector search | Same embedder as ingest (`all-MiniLM-L6-v2`); Chroma over-fetch ~2× top-k | Dense search over mixed Facts + noisy full windows |
+| 2. Vector search | Same embedder as ingest (`jina-embeddings-v2-base-en`); Chroma over-fetch ~2× top-k | Dense search over mixed Facts + noisy full windows |
 | 3. Metadata filter | `where={"scheme_tag": …}` when known; empty → retry unfiltered | Keeps Flexicap questions off Contra SID pages |
 | 4. Hybrid keyword boost | Chunk metadata keywords (`exit_load`, `sip`, `lock_in`, `ter`, …) | Helps surface **Scheme Facts** / named SBI sections over holdings lists |
 | 5. Re-rank | **`priority` first** (1→2→3), then combined similarity | Counteracts 160 SBI vs 34 Groww imbalance |
@@ -455,7 +455,7 @@ question
 | 1. Scrape / fetch | `src/ingest/fetch.py` | HTTP GET Groww (required) → shared HTML; register local KIM/SID PDFs | `docs/corpus/groww/`, `docs/corpus/shared/`, stamped `retrieved_on` |
 | 2. Normalize / parse | `src/ingest/parse.py` | BeautifulSoup + pdfplumber; extract Scheme Facts / sections | Parsed docs for chunking |
 | 3. Chunk | `src/ingest/chunk.py` | Groww-first chunking + metadata (`url`, `priority`, `retrieved_on`, …) | `data/chunks.jsonl` |
-| 4. Embed | `src/ingest/embed.py` | `sentence-transformers/all-MiniLM-L6-v2` | Vectors |
+| 4. Embed | `src/ingest/embed.py` | `jinaai/jina-embeddings-v2-base-en` | Vectors |
 | 5. Update ChromaDB | embed write path | Rebuild / replace collection `mf_faq_chunks` under `data/chroma/` | Fresh index + `data/chroma/embed_manifest.json` |
 
 **Single entrypoint:** `python scripts/build_index.py` (alias `python -m src.ingest`). The daily job **never** uses `--skip-fetch`.
