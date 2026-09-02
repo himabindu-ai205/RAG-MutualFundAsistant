@@ -1,5 +1,5 @@
-import { useCallback, useState } from "react";
-import { AnswerPanel, type AnswerState } from "./components/AnswerPanel";
+import { useCallback, useMemo, useState } from "react";
+import { AnswerPanel, type ChatTurn } from "./components/AnswerPanel";
 import { AskForm } from "./components/AskForm";
 import { ExampleChips } from "./components/ExampleChips";
 import { WelcomeCard } from "./components/WelcomeCard";
@@ -8,11 +8,19 @@ import { EMPTY_QUESTION_ERROR } from "./lib/constants";
 
 /** Ported from stitch_sbi_mutual_fund_faq_assistant/code1.html (home) and code.html (refusal). */
 
+function newTurnId(): string {
+  return crypto.randomUUID();
+}
+
 export default function App() {
   const [question, setQuestion] = useState("");
   const [fieldError, setFieldError] = useState<string | null>(null);
-  const [answer, setAnswer] = useState<AnswerState>({ kind: "empty" });
-  const loading = answer.kind === "loading";
+  const [turns, setTurns] = useState<ChatTurn[]>([]);
+
+  const loading = useMemo(
+    () => turns.some((turn) => turn.state.kind === "loading"),
+    [turns],
+  );
 
   const submit = useCallback(async (raw: string) => {
     const trimmed = raw.trim();
@@ -22,21 +30,35 @@ export default function App() {
     }
     setFieldError(null);
     setQuestion("");
-    setAnswer({ kind: "loading" });
+
+    const turnId = newTurnId();
+    setTurns((prev) => [
+      ...prev,
+      { id: turnId, question: trimmed, state: { kind: "loading" } },
+    ]);
+
     try {
       const payload = await askQuestion(trimmed);
-      setAnswer({ kind: "result", payload });
+      setTurns((prev) =>
+        prev.map((turn) =>
+          turn.id === turnId ? { ...turn, state: { kind: "result", payload } } : turn,
+        ),
+      );
     } catch (error) {
       if (error instanceof ChatRequestError && error.code === "question_required") {
         setFieldError(EMPTY_QUESTION_ERROR);
-        setAnswer({ kind: "empty" });
+        setTurns((prev) => prev.filter((turn) => turn.id !== turnId));
         return;
       }
       const message =
         error instanceof ChatRequestError
           ? error.message
           : "The assistant could not be reached.";
-      setAnswer({ kind: "error", message });
+      setTurns((prev) =>
+        prev.map((turn) =>
+          turn.id === turnId ? { ...turn, state: { kind: "error", message } } : turn,
+        ),
+      );
     }
   }, []);
 
@@ -64,7 +86,7 @@ export default function App() {
             />
           </div>
           <div className="flex flex-col gap-lg w-full lg:w-7/12 flex-grow">
-            <AnswerPanel state={answer} />
+            <AnswerPanel turns={turns} />
             <AskForm
               question={question}
               disabled={loading}

@@ -23,9 +23,11 @@ UI_DIST = ROOT / "ui" / "dist"
 
 @asynccontextmanager
 async def _lifespan(_app: FastAPI):
-    from src.ingest.embed import EmbedConfig, warmup_query_engine
+    from src.ingest.embed import EmbedConfig, ensure_chroma_index, warmup_query_engine
 
-    warmup_query_engine(EmbedConfig(chroma_dir=chroma_dir()))
+    cfg = EmbedConfig(chroma_dir=chroma_dir())
+    ensure_chroma_index(cfg)
+    warmup_query_engine(cfg)
     yield
 
 

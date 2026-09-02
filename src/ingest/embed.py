@@ -352,6 +352,60 @@ def warmup_query_engine(config: EmbedConfig | None = None) -> None:
         logger.warning("Query engine warmup skipped: %s", exc)
 
 
+def chroma_index_ready(cfg: EmbedConfig) -> bool:
+    """True when manifest and Chroma collection match the configured embedder."""
+    manifest_path = cfg.chroma_dir / "embed_manifest.json"
+    if not manifest_path.is_file():
+        return False
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return False
+    if manifest.get("model") != cfg.model_name:
+        return False
+    if manifest.get("collection") != cfg.collection_name:
+        return False
+    expected_count = int(manifest.get("count") or 0)
+    if expected_count <= 0:
+        return False
+    try:
+        client = _get_query_client(cfg.chroma_dir)
+        coll = client.get_collection(cfg.collection_name)
+        return coll.count() >= expected_count
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def ensure_chroma_index(config: EmbedConfig | None = None) -> dict[str, Any] | None:
+    """Build Chroma from chunks.jsonl when the on-disk index is missing or stale."""
+    cfg = config or EmbedConfig()
+    if chroma_index_ready(cfg):
+        manifest_path = cfg.chroma_dir / "embed_manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        logger.info(
+            "Chroma index ready: model=%s count=%s path=%s",
+            manifest.get("model"),
+            manifest.get("count"),
+            cfg.chroma_dir,
+        )
+        return None
+    if not DEFAULT_CHUNKS_JSONL.is_file():
+        raise FileNotFoundError(
+            f"Missing {DEFAULT_CHUNKS_JSONL}; cannot build Chroma index at startup."
+        )
+    logger.info("Building Chroma index at startup (model=%s)…", cfg.model_name)
+    # Smaller batches reduce peak RAM during first boot on Railway.
+    startup_cfg = EmbedConfig(
+        model_name=cfg.model_name,
+        chroma_dir=cfg.chroma_dir,
+        collection_name=cfg.collection_name,
+        batch_size=min(cfg.batch_size, 16),
+    )
+    summary = build_index_from_chunks_file(DEFAULT_CHUNKS_JSONL, config=startup_cfg, reset=True)
+    logger.info("Startup index build complete: %d chunks", summary["count"])
+    return summary
+
+
 def build_index_from_chunks_file(
     chunks_path: Path = DEFAULT_CHUNKS_JSONL,
     *,

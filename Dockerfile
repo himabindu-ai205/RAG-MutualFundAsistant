@@ -23,7 +23,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
+# CPU-only torch keeps the image smaller and avoids CUDA deps on Railway.
 RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu \
     && pip install --no-cache-dir -r requirements.txt
 
 COPY src ./src
@@ -33,9 +35,9 @@ COPY data ./data
 COPY disclaimer.txt .
 COPY --from=ui /ui/dist ./ui/dist
 
-# Warm the embedding model, then (re)build Chroma from committed chunks.jsonl
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('jinaai/jina-embeddings-v2-base-en', trust_remote_code=True)" \
-    && python scripts/embed_corpus.py
+# Download/warm the embedding model only. Chroma is built at container startup
+# (see ensure_chroma_index) so Railway builds stay within memory/time limits.
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('jinaai/jina-embeddings-v2-base-en', trust_remote_code=True)"
 
 EXPOSE 8000
 

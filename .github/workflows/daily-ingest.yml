@@ -46,9 +46,9 @@ jobs:
           path: |
             ~/.cache/huggingface
             ~/.cache/torch
-          key: ${{ runner.os }}-hf-minilm-${{ hashFiles('requirements.txt') }}
+          key: ${{ runner.os }}-hf-jina-${{ hashFiles('requirements.txt') }}
           restore-keys: |
-            ${{ runner.os }}-hf-minilm-
+            ${{ runner.os }}-hf-jina-
 
       - name: Install dependencies
         run: |
